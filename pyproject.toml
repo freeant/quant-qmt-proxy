@@ -1,0 +1,63 @@
+[project]
+name = "quant-qmt-proxy"
+version = "0.1.0"
+description = ""
+authors = [{ name = "zhzhl0", email = "zhzhl0@163.com" }]
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "fastapi (>=0.121.0,<0.122.0)",
+    "uvicorn[standard] (>=0.38.0,<0.39.0)",
+    "pydantic (>=2.12.4,<3.0.0)",
+    "pydantic-settings (>=2.11.0,<3.0.0)",
+    "python-multipart (>=0.0.20,<0.0.21)",
+    "python-dotenv (>=1.2.1,<2.0.0)",
+    "httpx (>=0.28.1,<0.29.0)",
+    "loguru (>=0.7.3,<0.8.0)",
+    "pyyaml (>=6.0.3,<7.0.0)",
+    "grpcio (>=1.76.0,<2.0.0)",
+    "grpcio-tools (>=1.76.0,<2.0.0)",
+    "protobuf (>=6.33.0,<7.0.0)",
+    "grpcio-reflection (>=1.76.0,<2.0.0)",
+    "xtquant (>=250516.1.1,<250517.0.0)",
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[[tool.poetry.source]]
+name = "tsinghua"
+url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple"
+priority = "primary"
+
+# poetry add fastapi uvicorn[standard] pydantic pydantic-settings python-multipart python-dotenv httpx loguru PyYAML grpcio grpcio-tools protobuf grpcio-reflection xtquant
+
+[tool.ruff]
+# 全局设置（非 lint 相关）
+line-length = 100
+target-version = "py312"
+fix = true               # 自动修复
+unsafe-fixes = false     # 禁用不安全的修复
+
+# 所有 linter 规则移到 [tool.ruff.lint] 下
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "C4", "UP", "TID", "PT", "RUF"]
+ignore = ["E501", "D", "RUF001", "RUF002", "RUF003", "RUF012", "F405", "F403", "W291", "E402"]
+
+# isort 也作为 lint 的子配置（或独立但推荐放 lint 下）
+[tool.ruff.lint.isort]
+known-first-party = ["src/app", "tests"]
+combine-as-imports = true            # 合并导入语句
+split-on-trailing-comma = false      # 不拆分尾随逗号
+lines-between-types = 1              # 类型之间空一行
+
+# 格式化配置（独立）
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+[dependency-groups]
+dev = [
+    "pytest (>=9.0.2,<10.0.0)"
+]
