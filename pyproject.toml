@@ -4,7 +4,7 @@ version = "0.1.0"
 description = ""
 authors = [{ name = "zhzhl0", email = "zhzhl0@163.com" }]
 readme = "README.md"
-requires-python = ">=3.12,<3.13"
+requires-python = ">=3.10,<3.14"
 dependencies = [
     "fastapi (>=0.121.0,<0.122.0)",
     "uvicorn[standard] (>=0.38.0,<0.39.0)",
@@ -15,10 +15,11 @@ dependencies = [
     "httpx (>=0.28.1,<0.29.0)",
     "loguru (>=0.7.3,<0.8.0)",
     "pyyaml (>=6.0.3,<7.0.0)",
-    "grpcio (>=1.76.0,<2.0.0)",
-    "grpcio-tools (>=1.76.0,<2.0.0)",
-    "protobuf (>=6.33.0,<7.0.0)",
-    "grpcio-reflection (>=1.76.0,<2.0.0)",
+    "pandas (>=2.3.3,<3.0.0)",
+    "grpcio (>=1.80.0,<2.0.0)",
+    "grpcio-tools (>=1.80.0,<2.0.0)",
+    "protobuf (>=6.33.6,<7.0.0)",
+    "grpcio-reflection (>=1.80.0,<2.0.0)",
     "xtquant (>=250516.1.1,<250517.0.0)",
 ]
 
@@ -37,7 +38,7 @@ priority = "primary"
 [tool.ruff]
 # 全局设置（非 lint 相关）
 line-length = 100
-target-version = "py312"
+target-version = "py310"
 fix = true               # 自动修复
 unsafe-fixes = false     # 禁用不安全的修复
 
@@ -59,5 +60,6 @@ quote-style = "double"
 indent-style = "space"
 [dependency-groups]
 dev = [
-    "pytest (>=9.0.2,<10.0.0)"
+    "pytest (>=9.0.2,<10.0.0)",
+    "pytest-asyncio (>=1.2.0,<2.0.0)",
 ]

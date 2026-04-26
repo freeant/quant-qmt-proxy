@@ -5,7 +5,7 @@ import warnings
 
 import generated.trading_pb2 as trading__pb2
 
-GRPC_GENERATED_VERSION = '1.78.0'
+GRPC_GENERATED_VERSION = '1.80.0'
 GRPC_VERSION = grpc.__version__
 _version_not_supported = False
 
@@ -26,9 +26,7 @@ if _version_not_supported:
 
 
 class TradingServiceStub(object):
-    """==================== 交易服务定义 ====================
-
-    """
+    """Missing associated documentation comment in .proto file."""
 
     def __init__(self, channel):
         """Constructor.
@@ -36,141 +34,117 @@ class TradingServiceStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.Connect = channel.unary_unary(
-                '/qmt.trading.TradingService/Connect',
-                request_serializer=trading__pb2.ConnectRequest.SerializeToString,
-                response_deserializer=trading__pb2.ConnectResponse.FromString,
+        self.OpenSession = channel.unary_unary(
+                '/qmt.trading.TradingService/OpenSession',
+                request_serializer=trading__pb2.OpenSessionRequest.SerializeToString,
+                response_deserializer=trading__pb2.OpenSessionResponse.FromString,
                 _registered_method=True)
-        self.Disconnect = channel.unary_unary(
-                '/qmt.trading.TradingService/Disconnect',
-                request_serializer=trading__pb2.DisconnectRequest.SerializeToString,
-                response_deserializer=trading__pb2.DisconnectResponse.FromString,
+        self.CloseSession = channel.unary_unary(
+                '/qmt.trading.TradingService/CloseSession',
+                request_serializer=trading__pb2.CloseSessionRequest.SerializeToString,
+                response_deserializer=trading__pb2.CloseSessionResponse.FromString,
                 _registered_method=True)
-        self.GetAccountInfo = channel.unary_unary(
-                '/qmt.trading.TradingService/GetAccountInfo',
-                request_serializer=trading__pb2.DisconnectRequest.SerializeToString,
-                response_deserializer=trading__pb2.ConnectResponse.FromString,
+        self.GetSession = channel.unary_unary(
+                '/qmt.trading.TradingService/GetSession',
+                request_serializer=trading__pb2.GetSessionRequest.SerializeToString,
+                response_deserializer=trading__pb2.GetSessionResponse.FromString,
                 _registered_method=True)
-        self.GetPositions = channel.unary_unary(
-                '/qmt.trading.TradingService/GetPositions',
-                request_serializer=trading__pb2.PositionRequest.SerializeToString,
-                response_deserializer=trading__pb2.PositionListResponse.FromString,
+        self.GetStockAsset = channel.unary_unary(
+                '/qmt.trading.TradingService/GetStockAsset',
+                request_serializer=trading__pb2.GetStockAssetRequest.SerializeToString,
+                response_deserializer=trading__pb2.GetStockAssetResponse.FromString,
                 _registered_method=True)
-        self.SubmitOrder = channel.unary_unary(
-                '/qmt.trading.TradingService/SubmitOrder',
-                request_serializer=trading__pb2.OrderRequest.SerializeToString,
-                response_deserializer=trading__pb2.OrderResponse.FromString,
+        self.GetStockPositions = channel.unary_unary(
+                '/qmt.trading.TradingService/GetStockPositions',
+                request_serializer=trading__pb2.GetStockPositionsRequest.SerializeToString,
+                response_deserializer=trading__pb2.GetStockPositionsResponse.FromString,
                 _registered_method=True)
-        self.CancelOrder = channel.unary_unary(
-                '/qmt.trading.TradingService/CancelOrder',
-                request_serializer=trading__pb2.CancelOrderRequest.SerializeToString,
-                response_deserializer=trading__pb2.CancelOrderResponse.FromString,
+        self.GetStockOrders = channel.unary_unary(
+                '/qmt.trading.TradingService/GetStockOrders',
+                request_serializer=trading__pb2.GetStockOrdersRequest.SerializeToString,
+                response_deserializer=trading__pb2.GetStockOrdersResponse.FromString,
                 _registered_method=True)
-        self.GetOrders = channel.unary_unary(
-                '/qmt.trading.TradingService/GetOrders',
-                request_serializer=trading__pb2.OrderListRequest.SerializeToString,
-                response_deserializer=trading__pb2.OrderListResponse.FromString,
+        self.GetStockTrades = channel.unary_unary(
+                '/qmt.trading.TradingService/GetStockTrades',
+                request_serializer=trading__pb2.GetStockTradesRequest.SerializeToString,
+                response_deserializer=trading__pb2.GetStockTradesResponse.FromString,
                 _registered_method=True)
-        self.GetTrades = channel.unary_unary(
-                '/qmt.trading.TradingService/GetTrades',
-                request_serializer=trading__pb2.TradeListRequest.SerializeToString,
-                response_deserializer=trading__pb2.TradeListResponse.FromString,
+        self.SubmitStockOrder = channel.unary_unary(
+                '/qmt.trading.TradingService/SubmitStockOrder',
+                request_serializer=trading__pb2.SubmitStockOrderRequest.SerializeToString,
+                response_deserializer=trading__pb2.SubmitStockOrderResponse.FromString,
                 _registered_method=True)
-        self.GetAsset = channel.unary_unary(
-                '/qmt.trading.TradingService/GetAsset',
-                request_serializer=trading__pb2.AssetRequest.SerializeToString,
-                response_deserializer=trading__pb2.AssetResponse.FromString,
+        self.CancelStockOrder = channel.unary_unary(
+                '/qmt.trading.TradingService/CancelStockOrder',
+                request_serializer=trading__pb2.CancelStockOrderRequest.SerializeToString,
+                response_deserializer=trading__pb2.CancelStockOrderResponse.FromString,
                 _registered_method=True)
-        self.GetRiskInfo = channel.unary_unary(
-                '/qmt.trading.TradingService/GetRiskInfo',
-                request_serializer=trading__pb2.RiskInfoRequest.SerializeToString,
-                response_deserializer=trading__pb2.RiskInfoResponse.FromString,
-                _registered_method=True)
-        self.GetStrategies = channel.unary_unary(
-                '/qmt.trading.TradingService/GetStrategies',
-                request_serializer=trading__pb2.StrategyListRequest.SerializeToString,
-                response_deserializer=trading__pb2.StrategyListResponse.FromString,
+        self.StreamTradingEvents = channel.unary_stream(
+                '/qmt.trading.TradingService/StreamTradingEvents',
+                request_serializer=trading__pb2.StreamTradingEventsRequest.SerializeToString,
+                response_deserializer=trading__pb2.TradingEvent.FromString,
                 _registered_method=True)
 
 
 class TradingServiceServicer(object):
-    """==================== 交易服务定义 ====================
+    """Missing associated documentation comment in .proto file."""
 
-    """
-
-    def Connect(self, request, context):
-        """连接账户（一元调用）
-        """
+    def OpenSession(self, request, context):
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def Disconnect(self, request, context):
-        """断开账户（一元调用）
-        """
+    def CloseSession(self, request, context):
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def GetAccountInfo(self, request, context):
-        """获取账户信息（一元调用）
-        """
+    def GetSession(self, request, context):
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def GetPositions(self, request, context):
-        """获取持仓列表（一元调用）
-        """
+    def GetStockAsset(self, request, context):
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def SubmitOrder(self, request, context):
-        """提交订单（一元调用）
-        """
+    def GetStockPositions(self, request, context):
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def CancelOrder(self, request, context):
-        """撤销订单（一元调用）
-        """
+    def GetStockOrders(self, request, context):
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def GetOrders(self, request, context):
-        """获取订单列表（一元调用）
-        """
+    def GetStockTrades(self, request, context):
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def GetTrades(self, request, context):
-        """获取成交记录（一元调用）
-        """
+    def SubmitStockOrder(self, request, context):
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def GetAsset(self, request, context):
-        """获取资产信息（一元调用）
-        """
+    def CancelStockOrder(self, request, context):
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def GetRiskInfo(self, request, context):
-        """获取风险信息（一元调用）
-        """
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def GetStrategies(self, request, context):
-        """获取策略列表（一元调用）
-        """
+    def StreamTradingEvents(self, request, context):
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
@@ -178,60 +152,55 @@ class TradingServiceServicer(object):
 
 def add_TradingServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'Connect': grpc.unary_unary_rpc_method_handler(
-                    servicer.Connect,
-                    request_deserializer=trading__pb2.ConnectRequest.FromString,
-                    response_serializer=trading__pb2.ConnectResponse.SerializeToString,
+            'OpenSession': grpc.unary_unary_rpc_method_handler(
+                    servicer.OpenSession,
+                    request_deserializer=trading__pb2.OpenSessionRequest.FromString,
+                    response_serializer=trading__pb2.OpenSessionResponse.SerializeToString,
             ),
-            'Disconnect': grpc.unary_unary_rpc_method_handler(
-                    servicer.Disconnect,
-                    request_deserializer=trading__pb2.DisconnectRequest.FromString,
-                    response_serializer=trading__pb2.DisconnectResponse.SerializeToString,
+            'CloseSession': grpc.unary_unary_rpc_method_handler(
+                    servicer.CloseSession,
+                    request_deserializer=trading__pb2.CloseSessionRequest.FromString,
+                    response_serializer=trading__pb2.CloseSessionResponse.SerializeToString,
             ),
-            'GetAccountInfo': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetAccountInfo,
-                    request_deserializer=trading__pb2.DisconnectRequest.FromString,
-                    response_serializer=trading__pb2.ConnectResponse.SerializeToString,
+            'GetSession': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetSession,
+                    request_deserializer=trading__pb2.GetSessionRequest.FromString,
+                    response_serializer=trading__pb2.GetSessionResponse.SerializeToString,
             ),
-            'GetPositions': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetPositions,
-                    request_deserializer=trading__pb2.PositionRequest.FromString,
-                    response_serializer=trading__pb2.PositionListResponse.SerializeToString,
+            'GetStockAsset': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetStockAsset,
+                    request_deserializer=trading__pb2.GetStockAssetRequest.FromString,
+                    response_serializer=trading__pb2.GetStockAssetResponse.SerializeToString,
             ),
-            'SubmitOrder': grpc.unary_unary_rpc_method_handler(
-                    servicer.SubmitOrder,
-                    request_deserializer=trading__pb2.OrderRequest.FromString,
-                    response_serializer=trading__pb2.OrderResponse.SerializeToString,
+            'GetStockPositions': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetStockPositions,
+                    request_deserializer=trading__pb2.GetStockPositionsRequest.FromString,
+                    response_serializer=trading__pb2.GetStockPositionsResponse.SerializeToString,
             ),
-            'CancelOrder': grpc.unary_unary_rpc_method_handler(
-                    servicer.CancelOrder,
-                    request_deserializer=trading__pb2.CancelOrderRequest.FromString,
-                    response_serializer=trading__pb2.CancelOrderResponse.SerializeToString,
+            'GetStockOrders': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetStockOrders,
+                    request_deserializer=trading__pb2.GetStockOrdersRequest.FromString,
+                    response_serializer=trading__pb2.GetStockOrdersResponse.SerializeToString,
             ),
-            'GetOrders': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetOrders,
-                    request_deserializer=trading__pb2.OrderListRequest.FromString,
-                    response_serializer=trading__pb2.OrderListResponse.SerializeToString,
+            'GetStockTrades': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetStockTrades,
+                    request_deserializer=trading__pb2.GetStockTradesRequest.FromString,
+                    response_serializer=trading__pb2.GetStockTradesResponse.SerializeToString,
             ),
-            'GetTrades': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetTrades,
-                    request_deserializer=trading__pb2.TradeListRequest.FromString,
-                    response_serializer=trading__pb2.TradeListResponse.SerializeToString,
+            'SubmitStockOrder': grpc.unary_unary_rpc_method_handler(
+                    servicer.SubmitStockOrder,
+                    request_deserializer=trading__pb2.SubmitStockOrderRequest.FromString,
+                    response_serializer=trading__pb2.SubmitStockOrderResponse.SerializeToString,
             ),
-            'GetAsset': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetAsset,
-                    request_deserializer=trading__pb2.AssetRequest.FromString,
-                    response_serializer=trading__pb2.AssetResponse.SerializeToString,
+            'CancelStockOrder': grpc.unary_unary_rpc_method_handler(
+                    servicer.CancelStockOrder,
+                    request_deserializer=trading__pb2.CancelStockOrderRequest.FromString,
+                    response_serializer=trading__pb2.CancelStockOrderResponse.SerializeToString,
             ),
-            'GetRiskInfo': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetRiskInfo,
-                    request_deserializer=trading__pb2.RiskInfoRequest.FromString,
-                    response_serializer=trading__pb2.RiskInfoResponse.SerializeToString,
-            ),
-            'GetStrategies': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetStrategies,
-                    request_deserializer=trading__pb2.StrategyListRequest.FromString,
-                    response_serializer=trading__pb2.StrategyListResponse.SerializeToString,
+            'StreamTradingEvents': grpc.unary_stream_rpc_method_handler(
+                    servicer.StreamTradingEvents,
+                    request_deserializer=trading__pb2.StreamTradingEventsRequest.FromString,
+                    response_serializer=trading__pb2.TradingEvent.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -242,12 +211,10 @@ def add_TradingServiceServicer_to_server(servicer, server):
 
  # This class is part of an EXPERIMENTAL API.
 class TradingService(object):
-    """==================== 交易服务定义 ====================
-
-    """
+    """Missing associated documentation comment in .proto file."""
 
     @staticmethod
-    def Connect(request,
+    def OpenSession(request,
             target,
             options=(),
             channel_credentials=None,
@@ -260,9 +227,9 @@ class TradingService(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/qmt.trading.TradingService/Connect',
-            trading__pb2.ConnectRequest.SerializeToString,
-            trading__pb2.ConnectResponse.FromString,
+            '/qmt.trading.TradingService/OpenSession',
+            trading__pb2.OpenSessionRequest.SerializeToString,
+            trading__pb2.OpenSessionResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -274,7 +241,7 @@ class TradingService(object):
             _registered_method=True)
 
     @staticmethod
-    def Disconnect(request,
+    def CloseSession(request,
             target,
             options=(),
             channel_credentials=None,
@@ -287,9 +254,9 @@ class TradingService(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/qmt.trading.TradingService/Disconnect',
-            trading__pb2.DisconnectRequest.SerializeToString,
-            trading__pb2.DisconnectResponse.FromString,
+            '/qmt.trading.TradingService/CloseSession',
+            trading__pb2.CloseSessionRequest.SerializeToString,
+            trading__pb2.CloseSessionResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -301,7 +268,7 @@ class TradingService(object):
             _registered_method=True)
 
     @staticmethod
-    def GetAccountInfo(request,
+    def GetSession(request,
             target,
             options=(),
             channel_credentials=None,
@@ -314,9 +281,9 @@ class TradingService(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/qmt.trading.TradingService/GetAccountInfo',
-            trading__pb2.DisconnectRequest.SerializeToString,
-            trading__pb2.ConnectResponse.FromString,
+            '/qmt.trading.TradingService/GetSession',
+            trading__pb2.GetSessionRequest.SerializeToString,
+            trading__pb2.GetSessionResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -328,7 +295,7 @@ class TradingService(object):
             _registered_method=True)
 
     @staticmethod
-    def GetPositions(request,
+    def GetStockAsset(request,
             target,
             options=(),
             channel_credentials=None,
@@ -341,9 +308,9 @@ class TradingService(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/qmt.trading.TradingService/GetPositions',
-            trading__pb2.PositionRequest.SerializeToString,
-            trading__pb2.PositionListResponse.FromString,
+            '/qmt.trading.TradingService/GetStockAsset',
+            trading__pb2.GetStockAssetRequest.SerializeToString,
+            trading__pb2.GetStockAssetResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -355,7 +322,7 @@ class TradingService(object):
             _registered_method=True)
 
     @staticmethod
-    def SubmitOrder(request,
+    def GetStockPositions(request,
             target,
             options=(),
             channel_credentials=None,
@@ -368,9 +335,9 @@ class TradingService(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/qmt.trading.TradingService/SubmitOrder',
-            trading__pb2.OrderRequest.SerializeToString,
-            trading__pb2.OrderResponse.FromString,
+            '/qmt.trading.TradingService/GetStockPositions',
+            trading__pb2.GetStockPositionsRequest.SerializeToString,
+            trading__pb2.GetStockPositionsResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -382,7 +349,7 @@ class TradingService(object):
             _registered_method=True)
 
     @staticmethod
-    def CancelOrder(request,
+    def GetStockOrders(request,
             target,
             options=(),
             channel_credentials=None,
@@ -395,9 +362,9 @@ class TradingService(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/qmt.trading.TradingService/CancelOrder',
-            trading__pb2.CancelOrderRequest.SerializeToString,
-            trading__pb2.CancelOrderResponse.FromString,
+            '/qmt.trading.TradingService/GetStockOrders',
+            trading__pb2.GetStockOrdersRequest.SerializeToString,
+            trading__pb2.GetStockOrdersResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -409,7 +376,7 @@ class TradingService(object):
             _registered_method=True)
 
     @staticmethod
-    def GetOrders(request,
+    def GetStockTrades(request,
             target,
             options=(),
             channel_credentials=None,
@@ -422,9 +389,9 @@ class TradingService(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/qmt.trading.TradingService/GetOrders',
-            trading__pb2.OrderListRequest.SerializeToString,
-            trading__pb2.OrderListResponse.FromString,
+            '/qmt.trading.TradingService/GetStockTrades',
+            trading__pb2.GetStockTradesRequest.SerializeToString,
+            trading__pb2.GetStockTradesResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -436,7 +403,7 @@ class TradingService(object):
             _registered_method=True)
 
     @staticmethod
-    def GetTrades(request,
+    def SubmitStockOrder(request,
             target,
             options=(),
             channel_credentials=None,
@@ -449,9 +416,9 @@ class TradingService(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/qmt.trading.TradingService/GetTrades',
-            trading__pb2.TradeListRequest.SerializeToString,
-            trading__pb2.TradeListResponse.FromString,
+            '/qmt.trading.TradingService/SubmitStockOrder',
+            trading__pb2.SubmitStockOrderRequest.SerializeToString,
+            trading__pb2.SubmitStockOrderResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -463,7 +430,7 @@ class TradingService(object):
             _registered_method=True)
 
     @staticmethod
-    def GetAsset(request,
+    def CancelStockOrder(request,
             target,
             options=(),
             channel_credentials=None,
@@ -476,9 +443,9 @@ class TradingService(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/qmt.trading.TradingService/GetAsset',
-            trading__pb2.AssetRequest.SerializeToString,
-            trading__pb2.AssetResponse.FromString,
+            '/qmt.trading.TradingService/CancelStockOrder',
+            trading__pb2.CancelStockOrderRequest.SerializeToString,
+            trading__pb2.CancelStockOrderResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -490,7 +457,7 @@ class TradingService(object):
             _registered_method=True)
 
     @staticmethod
-    def GetRiskInfo(request,
+    def StreamTradingEvents(request,
             target,
             options=(),
             channel_credentials=None,
@@ -500,39 +467,12 @@ class TradingService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(
+        return grpc.experimental.unary_stream(
             request,
             target,
-            '/qmt.trading.TradingService/GetRiskInfo',
-            trading__pb2.RiskInfoRequest.SerializeToString,
-            trading__pb2.RiskInfoResponse.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
-    def GetStrategies(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/qmt.trading.TradingService/GetStrategies',
-            trading__pb2.StrategyListRequest.SerializeToString,
-            trading__pb2.StrategyListResponse.FromString,
+            '/qmt.trading.TradingService/StreamTradingEvents',
+            trading__pb2.StreamTradingEventsRequest.SerializeToString,
+            trading__pb2.TradingEvent.FromString,
             options,
             channel_credentials,
             insecure,

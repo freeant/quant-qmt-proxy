@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0c\x63ommon.proto\x12\nqmt.common\"+\n\tTimestamp\x12\x0f\n\x07seconds\x18\x01 \x01(\x03\x12\r\n\x05nanos\x18\x02 \x01(\x05\"\x15\n\x04\x44\x61te\x12\r\n\x05value\x18\x01 \x01(\t\"\x89\x01\n\x06Status\x12\x0c\n\x04\x63ode\x18\x01 \x01(\x05\x12\x0f\n\x07message\x18\x02 \x01(\t\x12\x30\n\x07\x64\x65tails\x18\x03 \x03(\x0b\x32\x1f.qmt.common.Status.DetailsEntry\x1a.\n\x0c\x44\x65tailsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01*\xa7\x01\n\nMarketType\x12\x1b\n\x17MARKET_TYPE_UNSPECIFIED\x10\x00\x12\x18\n\x14MARKET_TYPE_SHANGHAI\x10\x01\x12\x18\n\x14MARKET_TYPE_SHENZHEN\x10\x02\x12\x17\n\x13MARKET_TYPE_BEIJING\x10\x03\x12\x17\n\x13MARKET_TYPE_FUTURES\x10\x04\x12\x16\n\x12MARKET_TYPE_OPTION\x10\x05*\xa0\x02\n\nPeriodType\x12\x1b\n\x17PERIOD_TYPE_UNSPECIFIED\x10\x00\x12\x14\n\x10PERIOD_TYPE_TICK\x10\x01\x12\x12\n\x0ePERIOD_TYPE_1M\x10\x02\x12\x12\n\x0ePERIOD_TYPE_5M\x10\x03\x12\x13\n\x0fPERIOD_TYPE_15M\x10\x04\x12\x13\n\x0fPERIOD_TYPE_30M\x10\x05\x12\x12\n\x0ePERIOD_TYPE_1H\x10\x06\x12\x12\n\x0ePERIOD_TYPE_1D\x10\x07\x12\x12\n\x0ePERIOD_TYPE_1W\x10\x08\x12\x14\n\x10PERIOD_TYPE_1MON\x10\t\x12\x12\n\x0ePERIOD_TYPE_1Q\x10\n\x12\x13\n\x0fPERIOD_TYPE_1HY\x10\x0b\x12\x12\n\x0ePERIOD_TYPE_1Y\x10\x0c\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0c\x63ommon.proto\x12\nqmt.common\"\x89\x01\n\x06Status\x12\x0c\n\x04\x63ode\x18\x01 \x01(\x05\x12\x0f\n\x07message\x18\x02 \x01(\t\x12\x30\n\x07\x64\x65tails\x18\x03 \x03(\x0b\x32\x1f.qmt.common.Status.DetailsEntry\x1a.\n\x0c\x44\x65tailsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01*\xae\x02\n\x0bQuotePeriod\x12\x1c\n\x18QUOTE_PERIOD_UNSPECIFIED\x10\x00\x12\x15\n\x11QUOTE_PERIOD_TICK\x10\x01\x12\x13\n\x0fQUOTE_PERIOD_1M\x10\x02\x12\x13\n\x0fQUOTE_PERIOD_5M\x10\x03\x12\x14\n\x10QUOTE_PERIOD_15M\x10\x04\x12\x14\n\x10QUOTE_PERIOD_30M\x10\x05\x12\x13\n\x0fQUOTE_PERIOD_1H\x10\x06\x12\x13\n\x0fQUOTE_PERIOD_1D\x10\x07\x12\x13\n\x0fQUOTE_PERIOD_1W\x10\x08\x12\x15\n\x11QUOTE_PERIOD_1MON\x10\t\x12\x13\n\x0fQUOTE_PERIOD_1Q\x10\n\x12\x14\n\x10QUOTE_PERIOD_1HY\x10\x0b\x12\x13\n\x0fQUOTE_PERIOD_1Y\x10\x0c*\xa5\x01\n\nAdjustType\x12\x1b\n\x17\x41\x44JUST_TYPE_UNSPECIFIED\x10\x00\x12\x14\n\x10\x41\x44JUST_TYPE_NONE\x10\x01\x12\x15\n\x11\x41\x44JUST_TYPE_FRONT\x10\x02\x12\x14\n\x10\x41\x44JUST_TYPE_BACK\x10\x03\x12\x1b\n\x17\x41\x44JUST_TYPE_FRONT_RATIO\x10\x04\x12\x1a\n\x16\x41\x44JUST_TYPE_BACK_RATIO\x10\x05*\x8c\x03\n\x13SecurityAccountType\x12%\n!SECURITY_ACCOUNT_TYPE_UNSPECIFIED\x10\x00\x12 \n\x1cSECURITY_ACCOUNT_TYPE_FUTURE\x10\x01\x12\x1f\n\x1bSECURITY_ACCOUNT_TYPE_STOCK\x10\x02\x12 \n\x1cSECURITY_ACCOUNT_TYPE_CREDIT\x10\x03\x12\'\n#SECURITY_ACCOUNT_TYPE_FUTURE_OPTION\x10\x05\x12&\n\"SECURITY_ACCOUNT_TYPE_STOCK_OPTION\x10\x06\x12$\n SECURITY_ACCOUNT_TYPE_HUGANGTONG\x10\x07\x12%\n!SECURITY_ACCOUNT_TYPE_INCOME_SWAP\x10\x08\x12#\n\x1fSECURITY_ACCOUNT_TYPE_NEW3BOARD\x10\n\x12&\n\"SECURITY_ACCOUNT_TYPE_SHENGANGTONG\x10\x0b*P\n\tOrderSide\x12\x1a\n\x16ORDER_SIDE_UNSPECIFIED\x10\x00\x12\x12\n\x0eORDER_SIDE_BUY\x10\x17\x12\x13\n\x0fORDER_SIDE_SELL\x10\x18*\xc6\x03\n\x0eStockPriceType\x12 \n\x1cSTOCK_PRICE_TYPE_UNSPECIFIED\x10\x00\x12!\n\x1dSTOCK_PRICE_TYPE_LATEST_PRICE\x10\x05\x12\x1e\n\x1aSTOCK_PRICE_TYPE_FIX_PRICE\x10\x0b\x12/\n+STOCK_PRICE_TYPE_MARKET_SH_CONVERT_5_CANCEL\x10*\x12.\n*STOCK_PRICE_TYPE_MARKET_SH_CONVERT_5_LIMIT\x10+\x12,\n(STOCK_PRICE_TYPE_MARKET_PEER_PRICE_FIRST\x10,\x12,\n(STOCK_PRICE_TYPE_MARKET_MINE_PRICE_FIRST\x10-\x12\x32\n.STOCK_PRICE_TYPE_MARKET_SZ_INSTBUSI_RESTCANCEL\x10.\x12/\n+STOCK_PRICE_TYPE_MARKET_SZ_CONVERT_5_CANCEL\x10/\x12-\n)STOCK_PRICE_TYPE_MARKET_SZ_FULL_OR_CANCEL\x10\x30\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -33,16 +33,18 @@ if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
   _globals['_STATUS_DETAILSENTRY']._loaded_options = None
   _globals['_STATUS_DETAILSENTRY']._serialized_options = b'8\001'
-  _globals['_MARKETTYPE']._serialized_start=237
-  _globals['_MARKETTYPE']._serialized_end=404
-  _globals['_PERIODTYPE']._serialized_start=407
-  _globals['_PERIODTYPE']._serialized_end=695
-  _globals['_TIMESTAMP']._serialized_start=28
-  _globals['_TIMESTAMP']._serialized_end=71
-  _globals['_DATE']._serialized_start=73
-  _globals['_DATE']._serialized_end=94
-  _globals['_STATUS']._serialized_start=97
-  _globals['_STATUS']._serialized_end=234
-  _globals['_STATUS_DETAILSENTRY']._serialized_start=188
-  _globals['_STATUS_DETAILSENTRY']._serialized_end=234
+  _globals['_QUOTEPERIOD']._serialized_start=169
+  _globals['_QUOTEPERIOD']._serialized_end=471
+  _globals['_ADJUSTTYPE']._serialized_start=474
+  _globals['_ADJUSTTYPE']._serialized_end=639
+  _globals['_SECURITYACCOUNTTYPE']._serialized_start=642
+  _globals['_SECURITYACCOUNTTYPE']._serialized_end=1038
+  _globals['_ORDERSIDE']._serialized_start=1040
+  _globals['_ORDERSIDE']._serialized_end=1120
+  _globals['_STOCKPRICETYPE']._serialized_start=1123
+  _globals['_STOCKPRICETYPE']._serialized_end=1577
+  _globals['_STATUS']._serialized_start=29
+  _globals['_STATUS']._serialized_end=166
+  _globals['_STATUS_DETAILSENTRY']._serialized_start=120
+  _globals['_STATUS_DETAILSENTRY']._serialized_end=166
 # @@protoc_insertion_point(module_scope)

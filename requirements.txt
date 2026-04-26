@@ -1,15 +1,19 @@
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
-pydantic==2.5.0
-pydantic-settings==2.1.0
-python-multipart==0.0.6
-python-dotenv==1.0.0
-httpx==0.25.2
-loguru==0.7.2
-PyYAML==6.0.1
+fastapi==0.121.0
+uvicorn[standard]==0.38.0
+pydantic==2.12.4
+pydantic-settings==2.11.0
+python-multipart==0.0.20
+python-dotenv==1.2.1
+httpx==0.28.1
+loguru==0.7.3
+PyYAML==6.0.3
+pandas==2.3.3
 
 # gRPC 相关
-grpcio==1.60.0
-grpcio-tools==1.60.0
-protobuf==4.25.1
-grpcio-reflection==1.60.0
+grpcio==1.80.0
+grpcio-tools==1.80.0
+protobuf==6.33.6
+grpcio-reflection==1.80.0
+
+# QMT SDK
+xtquant==250516.1.1

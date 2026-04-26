@@ -1,6 +1,5 @@
 import common_pb2 as _common_pb2
 from google.protobuf.internal import containers as _containers
-from google.protobuf.internal import enum_type_wrapper as _enum_type_wrapper
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
 from collections.abc import Iterable as _Iterable, Mapping as _Mapping
@@ -8,371 +7,378 @@ from typing import ClassVar as _ClassVar, Optional as _Optional, Union as _Union
 
 DESCRIPTOR: _descriptor.FileDescriptor
 
-class AccountType(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
-    __slots__ = ()
-    ACCOUNT_TYPE_UNSPECIFIED: _ClassVar[AccountType]
-    ACCOUNT_TYPE_FUTURE: _ClassVar[AccountType]
-    ACCOUNT_TYPE_SECURITY: _ClassVar[AccountType]
-    ACCOUNT_TYPE_CREDIT: _ClassVar[AccountType]
-    ACCOUNT_TYPE_FUTURE_OPTION: _ClassVar[AccountType]
-    ACCOUNT_TYPE_STOCK_OPTION: _ClassVar[AccountType]
-
-class OrderSide(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
-    __slots__ = ()
-    ORDER_SIDE_UNSPECIFIED: _ClassVar[OrderSide]
-    ORDER_SIDE_BUY: _ClassVar[OrderSide]
-    ORDER_SIDE_SELL: _ClassVar[OrderSide]
-
-class OrderType(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
-    __slots__ = ()
-    ORDER_TYPE_UNSPECIFIED: _ClassVar[OrderType]
-    ORDER_TYPE_MARKET: _ClassVar[OrderType]
-    ORDER_TYPE_LIMIT: _ClassVar[OrderType]
-    ORDER_TYPE_STOP: _ClassVar[OrderType]
-    ORDER_TYPE_STOP_LIMIT: _ClassVar[OrderType]
-
-class OrderStatus(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
-    __slots__ = ()
-    ORDER_STATUS_UNSPECIFIED: _ClassVar[OrderStatus]
-    ORDER_STATUS_PENDING: _ClassVar[OrderStatus]
-    ORDER_STATUS_SUBMITTED: _ClassVar[OrderStatus]
-    ORDER_STATUS_PARTIAL_FILLED: _ClassVar[OrderStatus]
-    ORDER_STATUS_FILLED: _ClassVar[OrderStatus]
-    ORDER_STATUS_CANCELLED: _ClassVar[OrderStatus]
-    ORDER_STATUS_REJECTED: _ClassVar[OrderStatus]
-ACCOUNT_TYPE_UNSPECIFIED: AccountType
-ACCOUNT_TYPE_FUTURE: AccountType
-ACCOUNT_TYPE_SECURITY: AccountType
-ACCOUNT_TYPE_CREDIT: AccountType
-ACCOUNT_TYPE_FUTURE_OPTION: AccountType
-ACCOUNT_TYPE_STOCK_OPTION: AccountType
-ORDER_SIDE_UNSPECIFIED: OrderSide
-ORDER_SIDE_BUY: OrderSide
-ORDER_SIDE_SELL: OrderSide
-ORDER_TYPE_UNSPECIFIED: OrderType
-ORDER_TYPE_MARKET: OrderType
-ORDER_TYPE_LIMIT: OrderType
-ORDER_TYPE_STOP: OrderType
-ORDER_TYPE_STOP_LIMIT: OrderType
-ORDER_STATUS_UNSPECIFIED: OrderStatus
-ORDER_STATUS_PENDING: OrderStatus
-ORDER_STATUS_SUBMITTED: OrderStatus
-ORDER_STATUS_PARTIAL_FILLED: OrderStatus
-ORDER_STATUS_FILLED: OrderStatus
-ORDER_STATUS_CANCELLED: OrderStatus
-ORDER_STATUS_REJECTED: OrderStatus
-
-class ConnectRequest(_message.Message):
-    __slots__ = ("account_id", "password", "client_id")
-    ACCOUNT_ID_FIELD_NUMBER: _ClassVar[int]
-    PASSWORD_FIELD_NUMBER: _ClassVar[int]
-    CLIENT_ID_FIELD_NUMBER: _ClassVar[int]
-    account_id: str
-    password: str
-    client_id: int
-    def __init__(self, account_id: _Optional[str] = ..., password: _Optional[str] = ..., client_id: _Optional[int] = ...) -> None: ...
-
-class AccountInfo(_message.Message):
-    __slots__ = ("account_id", "account_type", "account_name", "status", "balance", "available_balance", "frozen_balance", "market_value", "total_asset")
+class SessionInfo(_message.Message):
+    __slots__ = ("session_id", "account_id", "account_type", "is_real", "mode", "opened_at_ms", "environment", "account_kind", "orders_enabled", "account_profile")
+    SESSION_ID_FIELD_NUMBER: _ClassVar[int]
     ACCOUNT_ID_FIELD_NUMBER: _ClassVar[int]
     ACCOUNT_TYPE_FIELD_NUMBER: _ClassVar[int]
-    ACCOUNT_NAME_FIELD_NUMBER: _ClassVar[int]
-    STATUS_FIELD_NUMBER: _ClassVar[int]
-    BALANCE_FIELD_NUMBER: _ClassVar[int]
-    AVAILABLE_BALANCE_FIELD_NUMBER: _ClassVar[int]
-    FROZEN_BALANCE_FIELD_NUMBER: _ClassVar[int]
-    MARKET_VALUE_FIELD_NUMBER: _ClassVar[int]
-    TOTAL_ASSET_FIELD_NUMBER: _ClassVar[int]
+    IS_REAL_FIELD_NUMBER: _ClassVar[int]
+    MODE_FIELD_NUMBER: _ClassVar[int]
+    OPENED_AT_MS_FIELD_NUMBER: _ClassVar[int]
+    ENVIRONMENT_FIELD_NUMBER: _ClassVar[int]
+    ACCOUNT_KIND_FIELD_NUMBER: _ClassVar[int]
+    ORDERS_ENABLED_FIELD_NUMBER: _ClassVar[int]
+    ACCOUNT_PROFILE_FIELD_NUMBER: _ClassVar[int]
+    session_id: str
     account_id: str
-    account_type: AccountType
-    account_name: str
-    status: str
-    balance: float
-    available_balance: float
-    frozen_balance: float
-    market_value: float
-    total_asset: float
-    def __init__(self, account_id: _Optional[str] = ..., account_type: _Optional[_Union[AccountType, str]] = ..., account_name: _Optional[str] = ..., status: _Optional[str] = ..., balance: _Optional[float] = ..., available_balance: _Optional[float] = ..., frozen_balance: _Optional[float] = ..., market_value: _Optional[float] = ..., total_asset: _Optional[float] = ...) -> None: ...
+    account_type: _common_pb2.SecurityAccountType
+    is_real: bool
+    mode: str
+    opened_at_ms: int
+    environment: str
+    account_kind: str
+    orders_enabled: bool
+    account_profile: str
+    def __init__(self, session_id: _Optional[str] = ..., account_id: _Optional[str] = ..., account_type: _Optional[_Union[_common_pb2.SecurityAccountType, str]] = ..., is_real: bool = ..., mode: _Optional[str] = ..., opened_at_ms: _Optional[int] = ..., environment: _Optional[str] = ..., account_kind: _Optional[str] = ..., orders_enabled: bool = ..., account_profile: _Optional[str] = ...) -> None: ...
 
-class ConnectResponse(_message.Message):
-    __slots__ = ("success", "message", "session_id", "account_info", "status")
-    SUCCESS_FIELD_NUMBER: _ClassVar[int]
-    MESSAGE_FIELD_NUMBER: _ClassVar[int]
+class OpenSessionRequest(_message.Message):
+    __slots__ = ("account_id", "account_type")
+    ACCOUNT_ID_FIELD_NUMBER: _ClassVar[int]
+    ACCOUNT_TYPE_FIELD_NUMBER: _ClassVar[int]
+    account_id: str
+    account_type: _common_pb2.SecurityAccountType
+    def __init__(self, account_id: _Optional[str] = ..., account_type: _Optional[_Union[_common_pb2.SecurityAccountType, str]] = ...) -> None: ...
+
+class OpenSessionResponse(_message.Message):
+    __slots__ = ("session", "status")
+    SESSION_FIELD_NUMBER: _ClassVar[int]
+    STATUS_FIELD_NUMBER: _ClassVar[int]
+    session: SessionInfo
+    status: _common_pb2.Status
+    def __init__(self, session: _Optional[_Union[SessionInfo, _Mapping]] = ..., status: _Optional[_Union[_common_pb2.Status, _Mapping]] = ...) -> None: ...
+
+class CloseSessionRequest(_message.Message):
+    __slots__ = ("session_id",)
     SESSION_ID_FIELD_NUMBER: _ClassVar[int]
-    ACCOUNT_INFO_FIELD_NUMBER: _ClassVar[int]
+    session_id: str
+    def __init__(self, session_id: _Optional[str] = ...) -> None: ...
+
+class CloseSessionResponse(_message.Message):
+    __slots__ = ("success", "status")
+    SUCCESS_FIELD_NUMBER: _ClassVar[int]
     STATUS_FIELD_NUMBER: _ClassVar[int]
     success: bool
-    message: str
-    session_id: str
-    account_info: AccountInfo
     status: _common_pb2.Status
-    def __init__(self, success: bool = ..., message: _Optional[str] = ..., session_id: _Optional[str] = ..., account_info: _Optional[_Union[AccountInfo, _Mapping]] = ..., status: _Optional[_Union[_common_pb2.Status, _Mapping]] = ...) -> None: ...
+    def __init__(self, success: bool = ..., status: _Optional[_Union[_common_pb2.Status, _Mapping]] = ...) -> None: ...
 
-class DisconnectRequest(_message.Message):
+class GetSessionRequest(_message.Message):
     __slots__ = ("session_id",)
     SESSION_ID_FIELD_NUMBER: _ClassVar[int]
     session_id: str
     def __init__(self, session_id: _Optional[str] = ...) -> None: ...
 
-class DisconnectResponse(_message.Message):
-    __slots__ = ("success", "message", "status")
-    SUCCESS_FIELD_NUMBER: _ClassVar[int]
-    MESSAGE_FIELD_NUMBER: _ClassVar[int]
+class GetSessionResponse(_message.Message):
+    __slots__ = ("session", "status")
+    SESSION_FIELD_NUMBER: _ClassVar[int]
     STATUS_FIELD_NUMBER: _ClassVar[int]
-    success: bool
-    message: str
+    session: SessionInfo
     status: _common_pb2.Status
-    def __init__(self, success: bool = ..., message: _Optional[str] = ..., status: _Optional[_Union[_common_pb2.Status, _Mapping]] = ...) -> None: ...
+    def __init__(self, session: _Optional[_Union[SessionInfo, _Mapping]] = ..., status: _Optional[_Union[_common_pb2.Status, _Mapping]] = ...) -> None: ...
 
-class PositionRequest(_message.Message):
+class GetStockAssetRequest(_message.Message):
     __slots__ = ("session_id",)
     SESSION_ID_FIELD_NUMBER: _ClassVar[int]
     session_id: str
     def __init__(self, session_id: _Optional[str] = ...) -> None: ...
 
-class PositionInfo(_message.Message):
-    __slots__ = ("stock_code", "stock_name", "volume", "available_volume", "frozen_volume", "cost_price", "market_price", "market_value", "profit_loss", "profit_loss_ratio")
-    STOCK_CODE_FIELD_NUMBER: _ClassVar[int]
-    STOCK_NAME_FIELD_NUMBER: _ClassVar[int]
-    VOLUME_FIELD_NUMBER: _ClassVar[int]
-    AVAILABLE_VOLUME_FIELD_NUMBER: _ClassVar[int]
-    FROZEN_VOLUME_FIELD_NUMBER: _ClassVar[int]
-    COST_PRICE_FIELD_NUMBER: _ClassVar[int]
-    MARKET_PRICE_FIELD_NUMBER: _ClassVar[int]
-    MARKET_VALUE_FIELD_NUMBER: _ClassVar[int]
-    PROFIT_LOSS_FIELD_NUMBER: _ClassVar[int]
-    PROFIT_LOSS_RATIO_FIELD_NUMBER: _ClassVar[int]
-    stock_code: str
-    stock_name: str
-    volume: int
-    available_volume: int
-    frozen_volume: int
-    cost_price: float
-    market_price: float
-    market_value: float
-    profit_loss: float
-    profit_loss_ratio: float
-    def __init__(self, stock_code: _Optional[str] = ..., stock_name: _Optional[str] = ..., volume: _Optional[int] = ..., available_volume: _Optional[int] = ..., frozen_volume: _Optional[int] = ..., cost_price: _Optional[float] = ..., market_price: _Optional[float] = ..., market_value: _Optional[float] = ..., profit_loss: _Optional[float] = ..., profit_loss_ratio: _Optional[float] = ...) -> None: ...
-
-class PositionListResponse(_message.Message):
-    __slots__ = ("positions", "status")
-    POSITIONS_FIELD_NUMBER: _ClassVar[int]
-    STATUS_FIELD_NUMBER: _ClassVar[int]
-    positions: _containers.RepeatedCompositeFieldContainer[PositionInfo]
-    status: _common_pb2.Status
-    def __init__(self, positions: _Optional[_Iterable[_Union[PositionInfo, _Mapping]]] = ..., status: _Optional[_Union[_common_pb2.Status, _Mapping]] = ...) -> None: ...
-
-class OrderRequest(_message.Message):
-    __slots__ = ("session_id", "stock_code", "side", "order_type", "volume", "price", "strategy_name")
-    SESSION_ID_FIELD_NUMBER: _ClassVar[int]
-    STOCK_CODE_FIELD_NUMBER: _ClassVar[int]
-    SIDE_FIELD_NUMBER: _ClassVar[int]
-    ORDER_TYPE_FIELD_NUMBER: _ClassVar[int]
-    VOLUME_FIELD_NUMBER: _ClassVar[int]
-    PRICE_FIELD_NUMBER: _ClassVar[int]
-    STRATEGY_NAME_FIELD_NUMBER: _ClassVar[int]
-    session_id: str
-    stock_code: str
-    side: OrderSide
-    order_type: OrderType
-    volume: int
-    price: float
-    strategy_name: str
-    def __init__(self, session_id: _Optional[str] = ..., stock_code: _Optional[str] = ..., side: _Optional[_Union[OrderSide, str]] = ..., order_type: _Optional[_Union[OrderType, str]] = ..., volume: _Optional[int] = ..., price: _Optional[float] = ..., strategy_name: _Optional[str] = ...) -> None: ...
-
-class OrderInfo(_message.Message):
-    __slots__ = ("order_id", "stock_code", "side", "order_type", "volume", "price", "status", "submitted_time", "filled_volume", "filled_amount", "average_price")
-    ORDER_ID_FIELD_NUMBER: _ClassVar[int]
-    STOCK_CODE_FIELD_NUMBER: _ClassVar[int]
-    SIDE_FIELD_NUMBER: _ClassVar[int]
-    ORDER_TYPE_FIELD_NUMBER: _ClassVar[int]
-    VOLUME_FIELD_NUMBER: _ClassVar[int]
-    PRICE_FIELD_NUMBER: _ClassVar[int]
-    STATUS_FIELD_NUMBER: _ClassVar[int]
-    SUBMITTED_TIME_FIELD_NUMBER: _ClassVar[int]
-    FILLED_VOLUME_FIELD_NUMBER: _ClassVar[int]
-    FILLED_AMOUNT_FIELD_NUMBER: _ClassVar[int]
-    AVERAGE_PRICE_FIELD_NUMBER: _ClassVar[int]
-    order_id: str
-    stock_code: str
-    side: OrderSide
-    order_type: OrderType
-    volume: int
-    price: float
-    status: OrderStatus
-    submitted_time: str
-    filled_volume: int
-    filled_amount: float
-    average_price: float
-    def __init__(self, order_id: _Optional[str] = ..., stock_code: _Optional[str] = ..., side: _Optional[_Union[OrderSide, str]] = ..., order_type: _Optional[_Union[OrderType, str]] = ..., volume: _Optional[int] = ..., price: _Optional[float] = ..., status: _Optional[_Union[OrderStatus, str]] = ..., submitted_time: _Optional[str] = ..., filled_volume: _Optional[int] = ..., filled_amount: _Optional[float] = ..., average_price: _Optional[float] = ...) -> None: ...
-
-class OrderResponse(_message.Message):
-    __slots__ = ("order", "status")
-    ORDER_FIELD_NUMBER: _ClassVar[int]
-    STATUS_FIELD_NUMBER: _ClassVar[int]
-    order: OrderInfo
-    status: _common_pb2.Status
-    def __init__(self, order: _Optional[_Union[OrderInfo, _Mapping]] = ..., status: _Optional[_Union[_common_pb2.Status, _Mapping]] = ...) -> None: ...
-
-class CancelOrderRequest(_message.Message):
-    __slots__ = ("session_id", "order_id")
-    SESSION_ID_FIELD_NUMBER: _ClassVar[int]
-    ORDER_ID_FIELD_NUMBER: _ClassVar[int]
-    session_id: str
-    order_id: str
-    def __init__(self, session_id: _Optional[str] = ..., order_id: _Optional[str] = ...) -> None: ...
-
-class CancelOrderResponse(_message.Message):
-    __slots__ = ("success", "message", "status")
-    SUCCESS_FIELD_NUMBER: _ClassVar[int]
-    MESSAGE_FIELD_NUMBER: _ClassVar[int]
-    STATUS_FIELD_NUMBER: _ClassVar[int]
-    success: bool
-    message: str
-    status: _common_pb2.Status
-    def __init__(self, success: bool = ..., message: _Optional[str] = ..., status: _Optional[_Union[_common_pb2.Status, _Mapping]] = ...) -> None: ...
-
-class OrderListRequest(_message.Message):
-    __slots__ = ("session_id", "start_date", "end_date")
-    SESSION_ID_FIELD_NUMBER: _ClassVar[int]
-    START_DATE_FIELD_NUMBER: _ClassVar[int]
-    END_DATE_FIELD_NUMBER: _ClassVar[int]
-    session_id: str
-    start_date: str
-    end_date: str
-    def __init__(self, session_id: _Optional[str] = ..., start_date: _Optional[str] = ..., end_date: _Optional[str] = ...) -> None: ...
-
-class OrderListResponse(_message.Message):
-    __slots__ = ("orders", "status")
-    ORDERS_FIELD_NUMBER: _ClassVar[int]
-    STATUS_FIELD_NUMBER: _ClassVar[int]
-    orders: _containers.RepeatedCompositeFieldContainer[OrderInfo]
-    status: _common_pb2.Status
-    def __init__(self, orders: _Optional[_Iterable[_Union[OrderInfo, _Mapping]]] = ..., status: _Optional[_Union[_common_pb2.Status, _Mapping]] = ...) -> None: ...
-
-class TradeListRequest(_message.Message):
-    __slots__ = ("session_id",)
-    SESSION_ID_FIELD_NUMBER: _ClassVar[int]
-    session_id: str
-    def __init__(self, session_id: _Optional[str] = ...) -> None: ...
-
-class TradeInfo(_message.Message):
-    __slots__ = ("trade_id", "order_id", "stock_code", "side", "volume", "price", "amount", "trade_time", "commission")
-    TRADE_ID_FIELD_NUMBER: _ClassVar[int]
-    ORDER_ID_FIELD_NUMBER: _ClassVar[int]
-    STOCK_CODE_FIELD_NUMBER: _ClassVar[int]
-    SIDE_FIELD_NUMBER: _ClassVar[int]
-    VOLUME_FIELD_NUMBER: _ClassVar[int]
-    PRICE_FIELD_NUMBER: _ClassVar[int]
-    AMOUNT_FIELD_NUMBER: _ClassVar[int]
-    TRADE_TIME_FIELD_NUMBER: _ClassVar[int]
-    COMMISSION_FIELD_NUMBER: _ClassVar[int]
-    trade_id: str
-    order_id: str
-    stock_code: str
-    side: OrderSide
-    volume: int
-    price: float
-    amount: float
-    trade_time: str
-    commission: float
-    def __init__(self, trade_id: _Optional[str] = ..., order_id: _Optional[str] = ..., stock_code: _Optional[str] = ..., side: _Optional[_Union[OrderSide, str]] = ..., volume: _Optional[int] = ..., price: _Optional[float] = ..., amount: _Optional[float] = ..., trade_time: _Optional[str] = ..., commission: _Optional[float] = ...) -> None: ...
-
-class TradeListResponse(_message.Message):
-    __slots__ = ("trades", "status")
-    TRADES_FIELD_NUMBER: _ClassVar[int]
-    STATUS_FIELD_NUMBER: _ClassVar[int]
-    trades: _containers.RepeatedCompositeFieldContainer[TradeInfo]
-    status: _common_pb2.Status
-    def __init__(self, trades: _Optional[_Iterable[_Union[TradeInfo, _Mapping]]] = ..., status: _Optional[_Union[_common_pb2.Status, _Mapping]] = ...) -> None: ...
-
-class AssetRequest(_message.Message):
-    __slots__ = ("session_id",)
-    SESSION_ID_FIELD_NUMBER: _ClassVar[int]
-    session_id: str
-    def __init__(self, session_id: _Optional[str] = ...) -> None: ...
-
-class AssetInfo(_message.Message):
-    __slots__ = ("total_asset", "market_value", "cash", "frozen_cash", "available_cash", "profit_loss", "profit_loss_ratio")
-    TOTAL_ASSET_FIELD_NUMBER: _ClassVar[int]
-    MARKET_VALUE_FIELD_NUMBER: _ClassVar[int]
+class StockAsset(_message.Message):
+    __slots__ = ("account_id", "cash", "frozen_cash", "market_value", "total_asset", "fetch_balance")
+    ACCOUNT_ID_FIELD_NUMBER: _ClassVar[int]
     CASH_FIELD_NUMBER: _ClassVar[int]
     FROZEN_CASH_FIELD_NUMBER: _ClassVar[int]
-    AVAILABLE_CASH_FIELD_NUMBER: _ClassVar[int]
-    PROFIT_LOSS_FIELD_NUMBER: _ClassVar[int]
-    PROFIT_LOSS_RATIO_FIELD_NUMBER: _ClassVar[int]
-    total_asset: float
-    market_value: float
+    MARKET_VALUE_FIELD_NUMBER: _ClassVar[int]
+    TOTAL_ASSET_FIELD_NUMBER: _ClassVar[int]
+    FETCH_BALANCE_FIELD_NUMBER: _ClassVar[int]
+    account_id: str
     cash: float
     frozen_cash: float
-    available_cash: float
-    profit_loss: float
-    profit_loss_ratio: float
-    def __init__(self, total_asset: _Optional[float] = ..., market_value: _Optional[float] = ..., cash: _Optional[float] = ..., frozen_cash: _Optional[float] = ..., available_cash: _Optional[float] = ..., profit_loss: _Optional[float] = ..., profit_loss_ratio: _Optional[float] = ...) -> None: ...
+    market_value: float
+    total_asset: float
+    fetch_balance: float
+    def __init__(self, account_id: _Optional[str] = ..., cash: _Optional[float] = ..., frozen_cash: _Optional[float] = ..., market_value: _Optional[float] = ..., total_asset: _Optional[float] = ..., fetch_balance: _Optional[float] = ...) -> None: ...
 
-class AssetResponse(_message.Message):
+class GetStockAssetResponse(_message.Message):
     __slots__ = ("asset", "status")
     ASSET_FIELD_NUMBER: _ClassVar[int]
     STATUS_FIELD_NUMBER: _ClassVar[int]
-    asset: AssetInfo
+    asset: StockAsset
     status: _common_pb2.Status
-    def __init__(self, asset: _Optional[_Union[AssetInfo, _Mapping]] = ..., status: _Optional[_Union[_common_pb2.Status, _Mapping]] = ...) -> None: ...
+    def __init__(self, asset: _Optional[_Union[StockAsset, _Mapping]] = ..., status: _Optional[_Union[_common_pb2.Status, _Mapping]] = ...) -> None: ...
 
-class RiskInfoRequest(_message.Message):
+class GetStockPositionsRequest(_message.Message):
     __slots__ = ("session_id",)
     SESSION_ID_FIELD_NUMBER: _ClassVar[int]
     session_id: str
     def __init__(self, session_id: _Optional[str] = ...) -> None: ...
 
-class RiskInfoResponse(_message.Message):
-    __slots__ = ("position_ratio", "cash_ratio", "max_drawdown", "var_95", "var_99", "status")
-    POSITION_RATIO_FIELD_NUMBER: _ClassVar[int]
-    CASH_RATIO_FIELD_NUMBER: _ClassVar[int]
-    MAX_DRAWDOWN_FIELD_NUMBER: _ClassVar[int]
-    VAR_95_FIELD_NUMBER: _ClassVar[int]
-    VAR_99_FIELD_NUMBER: _ClassVar[int]
+class StockPosition(_message.Message):
+    __slots__ = ("account_id", "stock_code", "instrument_name", "volume", "can_use_volume", "frozen_volume", "on_road_volume", "yesterday_volume", "open_price", "avg_price", "last_price", "market_value", "profit_rate", "direction", "secu_account")
+    ACCOUNT_ID_FIELD_NUMBER: _ClassVar[int]
+    STOCK_CODE_FIELD_NUMBER: _ClassVar[int]
+    INSTRUMENT_NAME_FIELD_NUMBER: _ClassVar[int]
+    VOLUME_FIELD_NUMBER: _ClassVar[int]
+    CAN_USE_VOLUME_FIELD_NUMBER: _ClassVar[int]
+    FROZEN_VOLUME_FIELD_NUMBER: _ClassVar[int]
+    ON_ROAD_VOLUME_FIELD_NUMBER: _ClassVar[int]
+    YESTERDAY_VOLUME_FIELD_NUMBER: _ClassVar[int]
+    OPEN_PRICE_FIELD_NUMBER: _ClassVar[int]
+    AVG_PRICE_FIELD_NUMBER: _ClassVar[int]
+    LAST_PRICE_FIELD_NUMBER: _ClassVar[int]
+    MARKET_VALUE_FIELD_NUMBER: _ClassVar[int]
+    PROFIT_RATE_FIELD_NUMBER: _ClassVar[int]
+    DIRECTION_FIELD_NUMBER: _ClassVar[int]
+    SECU_ACCOUNT_FIELD_NUMBER: _ClassVar[int]
+    account_id: str
+    stock_code: str
+    instrument_name: str
+    volume: int
+    can_use_volume: int
+    frozen_volume: int
+    on_road_volume: int
+    yesterday_volume: int
+    open_price: float
+    avg_price: float
+    last_price: float
+    market_value: float
+    profit_rate: float
+    direction: str
+    secu_account: str
+    def __init__(self, account_id: _Optional[str] = ..., stock_code: _Optional[str] = ..., instrument_name: _Optional[str] = ..., volume: _Optional[int] = ..., can_use_volume: _Optional[int] = ..., frozen_volume: _Optional[int] = ..., on_road_volume: _Optional[int] = ..., yesterday_volume: _Optional[int] = ..., open_price: _Optional[float] = ..., avg_price: _Optional[float] = ..., last_price: _Optional[float] = ..., market_value: _Optional[float] = ..., profit_rate: _Optional[float] = ..., direction: _Optional[str] = ..., secu_account: _Optional[str] = ...) -> None: ...
+
+class GetStockPositionsResponse(_message.Message):
+    __slots__ = ("positions", "status")
+    POSITIONS_FIELD_NUMBER: _ClassVar[int]
     STATUS_FIELD_NUMBER: _ClassVar[int]
-    position_ratio: float
-    cash_ratio: float
-    max_drawdown: float
-    var_95: float
-    var_99: float
+    positions: _containers.RepeatedCompositeFieldContainer[StockPosition]
     status: _common_pb2.Status
-    def __init__(self, position_ratio: _Optional[float] = ..., cash_ratio: _Optional[float] = ..., max_drawdown: _Optional[float] = ..., var_95: _Optional[float] = ..., var_99: _Optional[float] = ..., status: _Optional[_Union[_common_pb2.Status, _Mapping]] = ...) -> None: ...
+    def __init__(self, positions: _Optional[_Iterable[_Union[StockPosition, _Mapping]]] = ..., status: _Optional[_Union[_common_pb2.Status, _Mapping]] = ...) -> None: ...
 
-class StrategyListRequest(_message.Message):
-    __slots__ = ("session_id",)
+class GetStockOrdersRequest(_message.Message):
+    __slots__ = ("session_id", "cancelable_only")
     SESSION_ID_FIELD_NUMBER: _ClassVar[int]
+    CANCELABLE_ONLY_FIELD_NUMBER: _ClassVar[int]
     session_id: str
-    def __init__(self, session_id: _Optional[str] = ...) -> None: ...
+    cancelable_only: bool
+    def __init__(self, session_id: _Optional[str] = ..., cancelable_only: bool = ...) -> None: ...
 
-class StrategyInfo(_message.Message):
-    __slots__ = ("strategy_name", "strategy_type", "status", "created_time", "last_update_time", "parameters")
-    class ParametersEntry(_message.Message):
-        __slots__ = ("key", "value")
-        KEY_FIELD_NUMBER: _ClassVar[int]
-        VALUE_FIELD_NUMBER: _ClassVar[int]
-        key: str
-        value: str
-        def __init__(self, key: _Optional[str] = ..., value: _Optional[str] = ...) -> None: ...
+class StockOrder(_message.Message):
+    __slots__ = ("account_id", "stock_code", "instrument_name", "order_id", "order_sysid", "order_time_ms", "order_type", "order_volume", "price_type", "price", "traded_volume", "traded_price", "order_status_code", "status_msg", "strategy_name", "order_remark", "direction", "offset_flag", "secu_account")
+    ACCOUNT_ID_FIELD_NUMBER: _ClassVar[int]
+    STOCK_CODE_FIELD_NUMBER: _ClassVar[int]
+    INSTRUMENT_NAME_FIELD_NUMBER: _ClassVar[int]
+    ORDER_ID_FIELD_NUMBER: _ClassVar[int]
+    ORDER_SYSID_FIELD_NUMBER: _ClassVar[int]
+    ORDER_TIME_MS_FIELD_NUMBER: _ClassVar[int]
+    ORDER_TYPE_FIELD_NUMBER: _ClassVar[int]
+    ORDER_VOLUME_FIELD_NUMBER: _ClassVar[int]
+    PRICE_TYPE_FIELD_NUMBER: _ClassVar[int]
+    PRICE_FIELD_NUMBER: _ClassVar[int]
+    TRADED_VOLUME_FIELD_NUMBER: _ClassVar[int]
+    TRADED_PRICE_FIELD_NUMBER: _ClassVar[int]
+    ORDER_STATUS_CODE_FIELD_NUMBER: _ClassVar[int]
+    STATUS_MSG_FIELD_NUMBER: _ClassVar[int]
     STRATEGY_NAME_FIELD_NUMBER: _ClassVar[int]
-    STRATEGY_TYPE_FIELD_NUMBER: _ClassVar[int]
-    STATUS_FIELD_NUMBER: _ClassVar[int]
-    CREATED_TIME_FIELD_NUMBER: _ClassVar[int]
-    LAST_UPDATE_TIME_FIELD_NUMBER: _ClassVar[int]
-    PARAMETERS_FIELD_NUMBER: _ClassVar[int]
+    ORDER_REMARK_FIELD_NUMBER: _ClassVar[int]
+    DIRECTION_FIELD_NUMBER: _ClassVar[int]
+    OFFSET_FLAG_FIELD_NUMBER: _ClassVar[int]
+    SECU_ACCOUNT_FIELD_NUMBER: _ClassVar[int]
+    account_id: str
+    stock_code: str
+    instrument_name: str
+    order_id: str
+    order_sysid: str
+    order_time_ms: int
+    order_type: _common_pb2.OrderSide
+    order_volume: int
+    price_type: _common_pb2.StockPriceType
+    price: float
+    traded_volume: int
+    traded_price: float
+    order_status_code: int
+    status_msg: str
     strategy_name: str
-    strategy_type: str
-    status: str
-    created_time: str
-    last_update_time: str
-    parameters: _containers.ScalarMap[str, str]
-    def __init__(self, strategy_name: _Optional[str] = ..., strategy_type: _Optional[str] = ..., status: _Optional[str] = ..., created_time: _Optional[str] = ..., last_update_time: _Optional[str] = ..., parameters: _Optional[_Mapping[str, str]] = ...) -> None: ...
+    order_remark: str
+    direction: str
+    offset_flag: str
+    secu_account: str
+    def __init__(self, account_id: _Optional[str] = ..., stock_code: _Optional[str] = ..., instrument_name: _Optional[str] = ..., order_id: _Optional[str] = ..., order_sysid: _Optional[str] = ..., order_time_ms: _Optional[int] = ..., order_type: _Optional[_Union[_common_pb2.OrderSide, str]] = ..., order_volume: _Optional[int] = ..., price_type: _Optional[_Union[_common_pb2.StockPriceType, str]] = ..., price: _Optional[float] = ..., traded_volume: _Optional[int] = ..., traded_price: _Optional[float] = ..., order_status_code: _Optional[int] = ..., status_msg: _Optional[str] = ..., strategy_name: _Optional[str] = ..., order_remark: _Optional[str] = ..., direction: _Optional[str] = ..., offset_flag: _Optional[str] = ..., secu_account: _Optional[str] = ...) -> None: ...
 
-class StrategyListResponse(_message.Message):
-    __slots__ = ("strategies", "status")
-    STRATEGIES_FIELD_NUMBER: _ClassVar[int]
+class GetStockOrdersResponse(_message.Message):
+    __slots__ = ("orders", "status")
+    ORDERS_FIELD_NUMBER: _ClassVar[int]
     STATUS_FIELD_NUMBER: _ClassVar[int]
-    strategies: _containers.RepeatedCompositeFieldContainer[StrategyInfo]
+    orders: _containers.RepeatedCompositeFieldContainer[StockOrder]
     status: _common_pb2.Status
-    def __init__(self, strategies: _Optional[_Iterable[_Union[StrategyInfo, _Mapping]]] = ..., status: _Optional[_Union[_common_pb2.Status, _Mapping]] = ...) -> None: ...
+    def __init__(self, orders: _Optional[_Iterable[_Union[StockOrder, _Mapping]]] = ..., status: _Optional[_Union[_common_pb2.Status, _Mapping]] = ...) -> None: ...
+
+class GetStockTradesRequest(_message.Message):
+    __slots__ = ("session_id",)
+    SESSION_ID_FIELD_NUMBER: _ClassVar[int]
+    session_id: str
+    def __init__(self, session_id: _Optional[str] = ...) -> None: ...
+
+class StockTrade(_message.Message):
+    __slots__ = ("account_id", "stock_code", "instrument_name", "order_type", "traded_id", "traded_time_ms", "traded_price", "traded_volume", "traded_amount", "order_id", "order_sysid", "strategy_name", "order_remark", "direction", "offset_flag", "commission", "secu_account")
+    ACCOUNT_ID_FIELD_NUMBER: _ClassVar[int]
+    STOCK_CODE_FIELD_NUMBER: _ClassVar[int]
+    INSTRUMENT_NAME_FIELD_NUMBER: _ClassVar[int]
+    ORDER_TYPE_FIELD_NUMBER: _ClassVar[int]
+    TRADED_ID_FIELD_NUMBER: _ClassVar[int]
+    TRADED_TIME_MS_FIELD_NUMBER: _ClassVar[int]
+    TRADED_PRICE_FIELD_NUMBER: _ClassVar[int]
+    TRADED_VOLUME_FIELD_NUMBER: _ClassVar[int]
+    TRADED_AMOUNT_FIELD_NUMBER: _ClassVar[int]
+    ORDER_ID_FIELD_NUMBER: _ClassVar[int]
+    ORDER_SYSID_FIELD_NUMBER: _ClassVar[int]
+    STRATEGY_NAME_FIELD_NUMBER: _ClassVar[int]
+    ORDER_REMARK_FIELD_NUMBER: _ClassVar[int]
+    DIRECTION_FIELD_NUMBER: _ClassVar[int]
+    OFFSET_FLAG_FIELD_NUMBER: _ClassVar[int]
+    COMMISSION_FIELD_NUMBER: _ClassVar[int]
+    SECU_ACCOUNT_FIELD_NUMBER: _ClassVar[int]
+    account_id: str
+    stock_code: str
+    instrument_name: str
+    order_type: _common_pb2.OrderSide
+    traded_id: str
+    traded_time_ms: int
+    traded_price: float
+    traded_volume: int
+    traded_amount: float
+    order_id: str
+    order_sysid: str
+    strategy_name: str
+    order_remark: str
+    direction: str
+    offset_flag: str
+    commission: float
+    secu_account: str
+    def __init__(self, account_id: _Optional[str] = ..., stock_code: _Optional[str] = ..., instrument_name: _Optional[str] = ..., order_type: _Optional[_Union[_common_pb2.OrderSide, str]] = ..., traded_id: _Optional[str] = ..., traded_time_ms: _Optional[int] = ..., traded_price: _Optional[float] = ..., traded_volume: _Optional[int] = ..., traded_amount: _Optional[float] = ..., order_id: _Optional[str] = ..., order_sysid: _Optional[str] = ..., strategy_name: _Optional[str] = ..., order_remark: _Optional[str] = ..., direction: _Optional[str] = ..., offset_flag: _Optional[str] = ..., commission: _Optional[float] = ..., secu_account: _Optional[str] = ...) -> None: ...
+
+class GetStockTradesResponse(_message.Message):
+    __slots__ = ("trades", "status")
+    TRADES_FIELD_NUMBER: _ClassVar[int]
+    STATUS_FIELD_NUMBER: _ClassVar[int]
+    trades: _containers.RepeatedCompositeFieldContainer[StockTrade]
+    status: _common_pb2.Status
+    def __init__(self, trades: _Optional[_Iterable[_Union[StockTrade, _Mapping]]] = ..., status: _Optional[_Union[_common_pb2.Status, _Mapping]] = ...) -> None: ...
+
+class SubmitStockOrderRequest(_message.Message):
+    __slots__ = ("session_id", "stock_code", "side", "price_type", "volume", "price", "strategy_name", "order_remark")
+    SESSION_ID_FIELD_NUMBER: _ClassVar[int]
+    STOCK_CODE_FIELD_NUMBER: _ClassVar[int]
+    SIDE_FIELD_NUMBER: _ClassVar[int]
+    PRICE_TYPE_FIELD_NUMBER: _ClassVar[int]
+    VOLUME_FIELD_NUMBER: _ClassVar[int]
+    PRICE_FIELD_NUMBER: _ClassVar[int]
+    STRATEGY_NAME_FIELD_NUMBER: _ClassVar[int]
+    ORDER_REMARK_FIELD_NUMBER: _ClassVar[int]
+    session_id: str
+    stock_code: str
+    side: _common_pb2.OrderSide
+    price_type: _common_pb2.StockPriceType
+    volume: int
+    price: float
+    strategy_name: str
+    order_remark: str
+    def __init__(self, session_id: _Optional[str] = ..., stock_code: _Optional[str] = ..., side: _Optional[_Union[_common_pb2.OrderSide, str]] = ..., price_type: _Optional[_Union[_common_pb2.StockPriceType, str]] = ..., volume: _Optional[int] = ..., price: _Optional[float] = ..., strategy_name: _Optional[str] = ..., order_remark: _Optional[str] = ...) -> None: ...
+
+class SubmitStockOrderResponse(_message.Message):
+    __slots__ = ("order", "status")
+    ORDER_FIELD_NUMBER: _ClassVar[int]
+    STATUS_FIELD_NUMBER: _ClassVar[int]
+    order: StockOrder
+    status: _common_pb2.Status
+    def __init__(self, order: _Optional[_Union[StockOrder, _Mapping]] = ..., status: _Optional[_Union[_common_pb2.Status, _Mapping]] = ...) -> None: ...
+
+class CancelBySysIdTarget(_message.Message):
+    __slots__ = ("market", "order_sysid")
+    MARKET_FIELD_NUMBER: _ClassVar[int]
+    ORDER_SYSID_FIELD_NUMBER: _ClassVar[int]
+    market: str
+    order_sysid: str
+    def __init__(self, market: _Optional[str] = ..., order_sysid: _Optional[str] = ...) -> None: ...
+
+class CancelStockOrderRequest(_message.Message):
+    __slots__ = ("session_id", "order_id", "sysid_target")
+    SESSION_ID_FIELD_NUMBER: _ClassVar[int]
+    ORDER_ID_FIELD_NUMBER: _ClassVar[int]
+    SYSID_TARGET_FIELD_NUMBER: _ClassVar[int]
+    session_id: str
+    order_id: str
+    sysid_target: CancelBySysIdTarget
+    def __init__(self, session_id: _Optional[str] = ..., order_id: _Optional[str] = ..., sysid_target: _Optional[_Union[CancelBySysIdTarget, _Mapping]] = ...) -> None: ...
+
+class CancelStockOrderResponse(_message.Message):
+    __slots__ = ("success", "status")
+    SUCCESS_FIELD_NUMBER: _ClassVar[int]
+    STATUS_FIELD_NUMBER: _ClassVar[int]
+    success: bool
+    status: _common_pb2.Status
+    def __init__(self, success: bool = ..., status: _Optional[_Union[_common_pb2.Status, _Mapping]] = ...) -> None: ...
+
+class StreamTradingEventsRequest(_message.Message):
+    __slots__ = ("session_id",)
+    SESSION_ID_FIELD_NUMBER: _ClassVar[int]
+    session_id: str
+    def __init__(self, session_id: _Optional[str] = ...) -> None: ...
+
+class AccountStatusEvent(_message.Message):
+    __slots__ = ("account_id", "account_type", "status_code")
+    ACCOUNT_ID_FIELD_NUMBER: _ClassVar[int]
+    ACCOUNT_TYPE_FIELD_NUMBER: _ClassVar[int]
+    STATUS_CODE_FIELD_NUMBER: _ClassVar[int]
+    account_id: str
+    account_type: _common_pb2.SecurityAccountType
+    status_code: int
+    def __init__(self, account_id: _Optional[str] = ..., account_type: _Optional[_Union[_common_pb2.SecurityAccountType, str]] = ..., status_code: _Optional[int] = ...) -> None: ...
+
+class OrderErrorEvent(_message.Message):
+    __slots__ = ("account_id", "order_id", "error_id", "error_msg", "strategy_name", "order_remark")
+    ACCOUNT_ID_FIELD_NUMBER: _ClassVar[int]
+    ORDER_ID_FIELD_NUMBER: _ClassVar[int]
+    ERROR_ID_FIELD_NUMBER: _ClassVar[int]
+    ERROR_MSG_FIELD_NUMBER: _ClassVar[int]
+    STRATEGY_NAME_FIELD_NUMBER: _ClassVar[int]
+    ORDER_REMARK_FIELD_NUMBER: _ClassVar[int]
+    account_id: str
+    order_id: str
+    error_id: int
+    error_msg: str
+    strategy_name: str
+    order_remark: str
+    def __init__(self, account_id: _Optional[str] = ..., order_id: _Optional[str] = ..., error_id: _Optional[int] = ..., error_msg: _Optional[str] = ..., strategy_name: _Optional[str] = ..., order_remark: _Optional[str] = ...) -> None: ...
+
+class CancelErrorEvent(_message.Message):
+    __slots__ = ("account_id", "order_id", "order_sysid", "error_id", "error_msg")
+    ACCOUNT_ID_FIELD_NUMBER: _ClassVar[int]
+    ORDER_ID_FIELD_NUMBER: _ClassVar[int]
+    ORDER_SYSID_FIELD_NUMBER: _ClassVar[int]
+    ERROR_ID_FIELD_NUMBER: _ClassVar[int]
+    ERROR_MSG_FIELD_NUMBER: _ClassVar[int]
+    account_id: str
+    order_id: str
+    order_sysid: str
+    error_id: int
+    error_msg: str
+    def __init__(self, account_id: _Optional[str] = ..., order_id: _Optional[str] = ..., order_sysid: _Optional[str] = ..., error_id: _Optional[int] = ..., error_msg: _Optional[str] = ...) -> None: ...
+
+class TradingEvent(_message.Message):
+    __slots__ = ("event_time_ms", "account_status", "asset_update", "order_update", "trade_update", "position_update", "order_error", "cancel_error")
+    EVENT_TIME_MS_FIELD_NUMBER: _ClassVar[int]
+    ACCOUNT_STATUS_FIELD_NUMBER: _ClassVar[int]
+    ASSET_UPDATE_FIELD_NUMBER: _ClassVar[int]
+    ORDER_UPDATE_FIELD_NUMBER: _ClassVar[int]
+    TRADE_UPDATE_FIELD_NUMBER: _ClassVar[int]
+    POSITION_UPDATE_FIELD_NUMBER: _ClassVar[int]
+    ORDER_ERROR_FIELD_NUMBER: _ClassVar[int]
+    CANCEL_ERROR_FIELD_NUMBER: _ClassVar[int]
+    event_time_ms: int
+    account_status: AccountStatusEvent
+    asset_update: StockAsset
+    order_update: StockOrder
+    trade_update: StockTrade
+    position_update: StockPosition
+    order_error: OrderErrorEvent
+    cancel_error: CancelErrorEvent
+    def __init__(self, event_time_ms: _Optional[int] = ..., account_status: _Optional[_Union[AccountStatusEvent, _Mapping]] = ..., asset_update: _Optional[_Union[StockAsset, _Mapping]] = ..., order_update: _Optional[_Union[StockOrder, _Mapping]] = ..., trade_update: _Optional[_Union[StockTrade, _Mapping]] = ..., position_update: _Optional[_Union[StockPosition, _Mapping]] = ..., order_error: _Optional[_Union[OrderErrorEvent, _Mapping]] = ..., cancel_error: _Optional[_Union[CancelErrorEvent, _Mapping]] = ...) -> None: ...

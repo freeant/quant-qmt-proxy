@@ -1,367 +1,108 @@
-# QMT Proxy 测试框架
+# Tests
 
-QMT Proxy 项目的完整测试框架，包含 REST API 和 gRPC 接口的全面测试。
+The maintained test surface is `tests/unit`.
 
-## 📁 目录结构
+Default runs are local-only and use the in-process `mock` environment. Real xtquant tests are opt-in and split into:
 
-```
-tests/
-├── __init__.py                      # 测试模块初始化
-├── conftest.py                      # 全局共享 fixtures
-├── pytest.ini                       # pytest 全局配置
-├── README.md                        # 本文件
-│
-├── rest/                            # REST API 测试目录
-│   ├── __init__.py
-│   ├── conftest.py                  # REST 测试共享 fixtures
-│   ├── config.py                    # REST 测试配置
-│   ├── client.py                    # REST 客户端封装
-│   ├── README.md                    # REST 测试说明
-│   ├── test_health_api.py          # 健康检查接口测试
-│   ├── test_data_api.py            # 数据服务接口测试
-│   └── test_trading_api.py         # 交易服务接口测试
-│
-└── grpc/                            # gRPC 测试目录
-    ├── __init__.py
-    ├── conftest.py                  # gRPC 测试共享 fixtures
-    ├── config.py                    # gRPC 测试配置
-    ├── client.py                    # gRPC 客户端封装
-    ├── README.md                    # gRPC 测试说明
-    ├── test_data_grpc_service.py   # 数据服务测试
-    └── test_trading_grpc_service.py # 交易服务测试
-```
+- `mock`: local fake data and fake order flow
+- `dev`: real xtquant + explicitly registered simulated account
+- `prod`: real xtquant + explicitly registered real account, but automated tests remain readonly
 
-## 🚀 快速开始
-
-### 1. 安装依赖
+## Default local run
 
 ```powershell
-# 安装测试依赖
-pip install pytest pytest-asyncio httpx grpcio grpcio-tools protobuf
-
-# 或者使用 requirements.txt
-pip install -r requirements.txt
+.venv\Scripts\python.exe -m pytest -q
 ```
 
-### 2. 生成 protobuf 代码（仅 gRPC 测试需要）
+or
 
 ```powershell
-python scripts/generate_proto.py
+.venv\Scripts\python.exe -m pytest tests/unit -q
 ```
 
-### 3. 启动服务
+## Real-environment prerequisites
+
+Create an untracked local file named `config.test.local.yml` based on `config.test.local.example.yml`.
+
+`config.local.yml` is for normal runtime startup. `config.test.local.yml` is test-only and is read explicitly by the pytest fixture layer.
+
+The file is used for:
+
+- `testing.default_account_profile`
+- `testing.enable_prod_readonly_tests`
+- `testing.prod_unlock_token`
+- `testing.qmt_userdata_path`
+- `xtquant.trading.accounts`
+
+Account profiles must be registered explicitly:
+
+- `dev` tests require `account_kind: simulated`
+- `prod` tests require `account_kind: real`
+- both must be `enabled: true`
+
+## Pytest options
 
 ```powershell
-# 启动 REST API 服务
-python run.py
-
-# 或启动 gRPC 服务
-python run_grpc.py
-
-# 或启动混合模式（REST + gRPC）
-python run_hybrid.py
+pytest -q `
+  --xt-mode=dev `
+  --xt-account-profile=sim-dev `
+  --xt-enable-live-streams
 ```
 
-### 4. 运行测试
-
-```powershell
-# 运行所有测试
-pytest tests/ -v
-
-# 只运行 REST 测试
-pytest tests/rest/ -v
-
-# 只运行 gRPC 测试
-pytest tests/grpc/ -v
-```
-
-## 📋 测试命令参考
-
-### 基本命令
-
-```powershell
-# 运行所有测试
-pytest tests/ -v
-
-# 显示详细输出（包括 print）
-pytest tests/ -v -s
-
-# 显示跳过的测试
-pytest tests/ -v -rs
-
-# 在第一个失败时停止
-pytest tests/ -v -x
-
-# 显示最慢的 10 个测试
-pytest tests/ -v --durations=10
-```
-
-### 按标记运行
-
-```powershell
-# 只运行 REST 测试
-pytest tests/ -v -m rest
-
-# 只运行 gRPC 测试
-pytest tests/ -v -m grpc
-
-# 只运行集成测试
-pytest tests/ -v -m integration
-
-# 只运行性能测试
-pytest tests/ -v -m performance
-
-# 跳过慢速测试
-pytest tests/ -v -m "not slow"
-
-# 跳过集成测试
-pytest tests/ -v -m "not integration"
-```
-
-### 按路径运行
-
-```powershell
-# 运行特定测试文件
-pytest tests/rest/test_health_api.py -v
-
-# 运行特定测试类
-pytest tests/rest/test_data_api.py::TestDataAPI -v
-
-# 运行特定测试方法
-pytest tests/rest/test_data_api.py::TestDataAPI::test_get_market_data -v
-```
-
-### 按关键字运行
-
-```powershell
-# 运行包含 "health" 的测试
-pytest tests/ -v -k "health"
-
-# 运行包含 "market" 或 "sector" 的测试
-pytest tests/ -v -k "market or sector"
-
-# 运行不包含 "slow" 的测试
-pytest tests/ -v -k "not slow"
-```
-
-## 📊 测试报告
-
-### HTML 报告
-
-```powershell
-# 安装插件
-pip install pytest-html
-
-# 生成 HTML 报告
-pytest tests/ -v --html=report.html --self-contained-html
-```
-
-### 覆盖率报告
-
-```powershell
-# 安装插件
-pip install pytest-cov
-
-# 生成覆盖率报告
-pytest tests/ --cov=app --cov-report=html
-
-# 查看报告
-# 打开 htmlcov/index.html
-```
-
-### JUnit XML 报告（CI/CD）
-
-```powershell
-pytest tests/ -v --junitxml=junit.xml
-```
-
-## 🔧 配置说明
-
-### 全局配置 (tests/pytest.ini)
-
-```ini
-[pytest]
-testpaths = tests
-python_files = test_*.py
-python_classes = Test*
-python_functions = test_*
-addopts = -v --strict-markers --tb=short
-```
-
-### REST API 配置 (tests/rest/config.py)
-
-```python
-BASE_URL = "http://localhost:8000"
-API_KEY = "dev-api-key-001"
-SKIP_INTEGRATION_TESTS = True
-```
-
-### gRPC 配置 (tests/grpc/config.py)
-
-```python
-GRPC_SERVER_HOST = "localhost"
-GRPC_SERVER_PORT = 50051
-SKIP_INTEGRATION_TESTS = True
-```
-
-## 🎯 测试覆盖范围
-
-### REST API 测试
-
-| 类别 | 端点数 | 状态 |
-|------|--------|------|
-| 健康检查 | 5 | ✅ 完成 |
-| 数据服务 | 7 | ✅ 完成 |
-| 交易服务 | 11 | ✅ 完成 |
-| **总计** | **23** | **✅ 完成** |
-
-### gRPC 测试
-
-| 类别 | 接口数 | 状态 |
-|------|--------|------|
-| 健康检查 | 2 | ✅ 完成 |
-| 数据服务 | 9 | ✅ 完成 |
-| 交易服务 | 7 | ✅ 完成 |
-| **总计** | **18** | **✅ 完成** |
-
-## 📝 编写新测试
-
-### REST API 测试
-
-```python
-# tests/rest/test_example.py
-import pytest
-from tests.rest.client import RESTTestClient
-
-class TestExampleAPI:
-    """示例 API 测试"""
-    
-    @pytest.fixture
-    def client(self, base_url: str, api_key: str):
-        """创建测试客户端"""
-        with RESTTestClient(base_url=base_url, api_key=api_key) as client:
-            yield client
-    
-    def test_example(self, client: RESTTestClient):
-        """测试示例端点"""
-        response = client.client.get("/api/v1/example")
-        result = client.assert_success(response)
-        assert "data" in result
-```
-
-### gRPC 测试
-
-```python
-# tests/grpc/test_example.py
-import pytest
-from tests.grpc.client import GRPCTestClient
-
-class TestExampleGrpc:
-    """示例 gRPC 测试"""
-    
-    @pytest.fixture
-    def client(self):
-        """创建测试客户端"""
-        with GRPCTestClient(host='localhost', port=50051) as client:
-            yield client
-    
-    def test_example(self, client: GRPCTestClient):
-        """测试示例接口"""
-        response = client.some_method()
-        client.assert_success(response)
-```
-
-## 🔍 常见问题
-
-### Q1: 测试失败提示连接超时
-
-**A:** 确保服务已启动：
-```powershell
-# REST API
-python run.py
-
-# gRPC
-python run_grpc.py
-
-# 混合模式
-python run_hybrid.py
-```
-
-### Q2: 所有测试都被跳过
-
-**A:** 检查配置文件中的 `SKIP_INTEGRATION_TESTS` 设置：
-- `tests/rest/config.py`
-- `tests/grpc/config.py`
-
-将其设置为 `False` 以运行真实测试。
-
-### Q3: gRPC 测试失败提示找不到模块
-
-**A:** 生成 protobuf 代码：
-```powershell
-python scripts/generate_proto.py
-```
-
-### Q4: 导入错误
-
-**A:** 确保项目根目录在 Python 路径中，或在项目根目录下运行测试。
-
-## 🏗️ CI/CD 集成
-
-### GitHub Actions 示例
-
-```yaml
-name: Tests
-
-on: [push, pull_request]
-
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    
-    steps:
-    - uses: actions/checkout@v2
-    
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.10'
-    
-    - name: Install dependencies
-      run: |
-        pip install -r requirements.txt
-        pip install pytest pytest-cov
-    
-    - name: Generate protobuf
-      run: python scripts/generate_proto.py
-    
-    - name: Run tests
-      run: pytest tests/ -v --cov=app --junitxml=junit.xml
-    
-    - name: Upload coverage
-      uses: codecov/codecov-action@v2
-```
-
-## 📚 相关文档
-
-- [REST API 测试文档](rest/README.md)
-- [gRPC 测试文档](grpc/README.md)
-- [pytest 官方文档](https://docs.pytest.org/)
-- [httpx 文档](https://www.python-httpx.org/)
-- [gRPC Python 文档](https://grpc.io/docs/languages/python/)
-
-## 🤝 贡献指南
-
-1. 为新功能编写测试
-2. 确保所有测试通过
-3. 更新相关文档
-4. 提交 Pull Request
-
-## 📄 许可证
-
-本测试框架遵循项目主许可证。
-
----
-
-**最后更新**: 2025-10-25  
-**维护者**: Development Team
+Available options:
+
+- `--xt-mode=mock|dev|prod`
+- `--xt-account-profile=...`
+- `--xt-qmt-userdata-path=...`
+- `--xt-api-key=...`
+- `--xt-enable-live-streams`
+- `--xt-enable-prod-tests`
+
+## Environment variables
+
+Equivalent environment variables are supported:
+
+- `QMT_TEST_MODE`
+- `QMT_TEST_ACCOUNT_PROFILE`
+- `QMT_TEST_QMT_USERDATA_PATH`
+- `QMT_TEST_API_KEY`
+- `QMT_TEST_ENABLE_LIVE_STREAMS`
+- `QMT_TEST_ENABLE_PROD_TESTS`
+- `QMT_TEST_PROD_UNLOCK_TOKEN`
+
+## Safety defaults
+
+- Default mode is `mock`
+- `dev` and `prod` tests are skipped unless a valid local config and matching account profile exist
+- Live streaming tests are skipped in real mode unless `--xt-enable-live-streams` is enabled
+- `prod` readonly tests require all three:
+  - `testing.enable_prod_readonly_tests: true` in `config.test.local.yml`
+  - `--xt-enable-prod-tests`
+  - `QMT_TEST_PROD_UNLOCK_TOKEN` matching `testing.prod_unlock_token`
+- Automated `prod` tests never place real orders
+- `SubmitStockOrder` and `CancelStockOrder` in `prod` are asserted as rejected by the safety gate
+- This readonly rule only applies to pytest. Real deployed `prod` traffic can still place orders when `xtquant.trading.enable_prod_orders=true`
+
+## Covered interfaces
+
+`tests/unit` covers the maintained interface set:
+
+- REST data endpoints
+- REST trading endpoints
+- REST health endpoints and root endpoint
+- REST auth failure paths
+- WebSocket quote and whole-quote subscription consumption
+- WebSocket token and unknown-subscription rejection paths
+- gRPC data RPCs
+- gRPC trading RPCs
+- gRPC health check
+- gRPC auth failure paths for unary and streaming RPCs
+- gRPC trading event stream
+- configuration/runtime bootstrap paths
+- interface inventory checks for FastAPI and gRPC method coverage
+
+## Notes
+
+- Real xtquant validation still depends on your local QMT machine state.
+- Mock mode is the only mode guaranteed in CI/local default runs.
+- Legacy `tests/rest` and `tests/grpc` suites were removed; the default collection target is only `tests/unit`.

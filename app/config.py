@@ -1,23 +1,31 @@
-"""
-应用配置管理
-"""
+"""Application configuration."""
+
+from __future__ import annotations
+
 import os
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from pathlib import Path
+from typing import Any
 
 import yaml
 from pydantic import BaseModel, Field
 
+from app.utils.exceptions import ConfigurationException
+
 
 class XTQuantMode(str, Enum):
-    """xtquant接口模式"""
-    MOCK = "mock"  # 不连接xtquant，使用模拟数据
-    DEV = "dev"    # 连接xtquant，获取真实数据，但不允许交易
-    PROD = "prod"  # 连接xtquant，获取真实数据，允许真实交易
+    MOCK = "mock"
+    DEV = "dev"
+    PROD = "prod"
+
+
+class AccountKind(str, Enum):
+    MOCK = "mock"
+    SIMULATED = "simulated"
+    REAL = "real"
 
 
 class AppConfig(BaseModel):
-    """应用基础配置"""
     name: str = "xtquant-proxy"
     version: str = "1.0.0"
     debug: bool = False
@@ -26,79 +34,83 @@ class AppConfig(BaseModel):
 
 
 class LoggingConfig(BaseModel):
-    """日志配置"""
     level: str = "INFO"
-    file: Optional[str] = "logs/app.log"
-    error_file: Optional[str] = "logs/error.log"
+    file: str | None = "logs/app.log"
+    error_file: str | None = "logs/error.log"
     format: str = "{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {name}:{function}:{line} - {message}"
-    rotation: str = "10 MB"  # 日志文件轮转大小
-    retention: str = "30 days"  # 日志保留时间
-    compression: str = "zip"  # 压缩格式
-    console_output: bool = True  # 是否同时输出到控制台
-    backtrace: bool = True  # 是否显示完整堆栈跟踪
-    diagnose: bool = False  # 是否显示诊断信息
+    rotation: str = "10 MB"
+    retention: str = "30 days"
+    compression: str = "zip"
+    console_output: bool = True
+    backtrace: bool = True
+    diagnose: bool = False
 
 
 class XTQuantDataConfig(BaseModel):
-    """xtquant数据配置"""
     path: str = "./data"
     config_path: str = "./xtquant/config"
-    qmt_userdata_path: Optional[str] = None  # QMT客户端的userdata_mini路径
-    # 行情订阅配置
-    max_queue_size: int = 1000  # 每个订阅队列最大长度
-    max_subscriptions: int = 100  # 单实例最大订阅数
-    heartbeat_timeout: int = 60  # WebSocket心跳超时（秒）
-    whole_quote_enabled: bool = False  # 是否允许全推订阅
+    qmt_userdata_path: str | None = None
+    max_queue_size: int = 1000
+    max_subscriptions: int = 100
+    heartbeat_interval: int = 60
+    whole_quote_enabled: bool = False
+
+
+class XTQuantTradingAccountConfig(BaseModel):
+    name: str
+    account_id: str
+    account_type: str = "STOCK"
+    account_kind: AccountKind = AccountKind.SIMULATED
+    allowed_modes: list[XTQuantMode] = Field(default_factory=lambda: [XTQuantMode.DEV])
+    enabled: bool = True
 
 
 class XTQuantTradingConfig(BaseModel):
-    """xtquant交易配置"""
-    allow_real_trading: bool = False
     mock_account_id: str = "mock_account_001"
     mock_password: str = "mock_password"
-    test_account_id: Optional[str] = None
-    test_password: Optional[str] = None
-    real_accounts: Optional[List[Dict[str, Any]]] = None
+    enable_prod_orders: bool = False
+    disconnect_timeout_seconds: float = 3.0
+    accounts: list[XTQuantTradingAccountConfig] = Field(default_factory=list)
 
 
 class XTQuantConfig(BaseModel):
-    """xtquant配置"""
     mode: XTQuantMode = XTQuantMode.MOCK
     data: XTQuantDataConfig = Field(default_factory=XTQuantDataConfig)
     trading: XTQuantTradingConfig = Field(default_factory=XTQuantTradingConfig)
 
 
 class SecurityConfig(BaseModel):
-    """安全配置"""
     secret_key: str = "your-secret-key-change-in-production"
-    api_key_header: str = "X-API-Key"
-    api_keys: List[str] = Field(default_factory=list)
+    api_keys: list[str] = Field(default_factory=list)
 
 
 class DatabaseConfig(BaseModel):
-    """数据库配置"""
-    url: Optional[str] = None
+    url: str | None = None
 
 
 class RedisConfig(BaseModel):
-    """Redis配置"""
-    url: Optional[str] = None
+    url: str | None = None
 
 
 class CORSConfig(BaseModel):
-    """CORS配置"""
-    allow_origins: List[str] = Field(default_factory=lambda: ["*"])
+    allow_origins: list[str] = Field(default_factory=lambda: ["*"])
     allow_credentials: bool = True
-    allow_methods: List[str] = Field(default_factory=lambda: ["*"])
-    allow_headers: List[str] = Field(default_factory=lambda: ["*"])
+    allow_methods: list[str] = Field(default_factory=lambda: ["*"])
+    allow_headers: list[str] = Field(default_factory=lambda: ["*"])
+
 
 class UvicornConfig(BaseModel):
-    """uvicorn配置"""
     timeout_keep_alive: int = 5
 
 
+class TestingConfig(BaseModel):
+    default_account_profile: str | None = None
+    enable_prod_readonly_tests: bool = False
+    qmt_userdata_path: str | None = None
+    prod_unlock_token: str | None = None
+
+
 class Settings(BaseModel):
-    """完整配置类"""
     app: AppConfig = Field(default_factory=AppConfig)
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
     xtquant: XTQuantConfig = Field(default_factory=XTQuantConfig)
@@ -107,130 +119,237 @@ class Settings(BaseModel):
     redis: RedisConfig = Field(default_factory=RedisConfig)
     cors: CORSConfig = Field(default_factory=CORSConfig)
     uvicorn: UvicornConfig = Field(default_factory=UvicornConfig)
-    
-    # gRPC 配置（使用属性访问以保持向后兼容）
+    testing: TestingConfig = Field(default_factory=TestingConfig)
     grpc_enabled: bool = True
     grpc_host: str = "0.0.0.0"
     grpc_port: int = 50051
     grpc_max_workers: int = 10
-    grpc_max_message_length: int = 50 * 1024 * 1024  # 50MB
+    grpc_max_message_length: int = 50 * 1024 * 1024
+    app_servers: str = "all"
 
 
-def load_config(config_file: Optional[str] = None) -> Settings:
-    """
-    加载配置文件
-    通过环境变量 APP_MODE 选择模式: mock, dev, prod
-    默认使用 dev 模式
-    """
-    if config_file is None:
-        config_file = "config.yml"
-    
-    if not os.path.exists(config_file):
-        return Settings()
-    
-    try:
-        with open(config_file, 'r', encoding='utf-8') as f:
-            config_data = yaml.safe_load(f)
-        
-        # 获取运行模式
-        app_mode = os.getenv("APP_MODE", "dev").lower()
-        
-        if app_mode not in ["mock", "dev", "prod"]:
-            app_mode = "dev"
-        
-        # 获取模式特定配置
-        modes_config = config_data.get("modes", {})
-        mode_config = modes_config.get(app_mode, {})
-        
-        if not mode_config:
-            return Settings()
-        
-        # 构建完整配置
-        final_config = {
-            "app": {
-                "name": config_data.get("app", {}).get("name", "xtquant-proxy"),
-                "version": config_data.get("app", {}).get("version", "1.0.0"),
-                "debug": mode_config.get("debug", False),
-                "host": mode_config.get("host", "0.0.0.0"),
-                "port": mode_config.get("port", 8000)
+def _env_flag(name: str, default: bool) -> bool:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _deep_merge(base: Any, overlay: Any) -> Any:
+    if not isinstance(base, dict) or not isinstance(overlay, dict):
+        return overlay
+    merged = dict(base)
+    for key, value in overlay.items():
+        if key in merged:
+            merged[key] = _deep_merge(merged[key], value)
+        else:
+            merged[key] = value
+    return merged
+
+
+def _load_yaml_file(path: str | os.PathLike[str] | None) -> dict[str, Any]:
+    if not path:
+        return {}
+    file_path = Path(path)
+    if not file_path.exists():
+        return {}
+    with file_path.open("r", encoding="utf-8") as handle:
+        data = yaml.safe_load(handle) or {}
+        if not isinstance(data, dict):
+            return {}
+        return data
+
+
+def _normalize_mode(mode: str | None) -> str:
+    normalized = (mode or "dev").strip().lower()
+    if normalized not in {"mock", "dev", "prod"}:
+        if mode is None or not str(mode).strip():
+            return "dev"
+        raise ConfigurationException(
+            f"invalid app mode: {mode}",
+            "INVALID_APP_MODE",
+        )
+    return normalized
+
+
+def _normalize_app_servers(value: str | None) -> str:
+    normalized = (value or "all").strip().lower()
+    if normalized not in {"all", "grpc", "rest"}:
+        if value is None or not str(value).strip():
+            return "all"
+        raise ConfigurationException(
+            f"invalid app servers: {value}",
+            "INVALID_APP_SERVERS",
+        )
+    return normalized
+
+
+def load_config(
+    config_file: str | None = None,
+    *,
+    app_mode: str | None = None,
+    local_config_file: str | None = "config.local.yml",
+) -> Settings:
+    config_file = config_file or "config.yml"
+
+    config_data = _load_yaml_file(config_file)
+    if local_config_file:
+        config_data = _deep_merge(config_data, _load_yaml_file(local_config_file))
+
+    if not config_data:
+        raise ConfigurationException(
+            f"configuration file '{config_file}' is missing or empty",
+            "CONFIG_FILE_MISSING",
+        )
+
+    resolved_mode = _normalize_mode(app_mode or os.getenv("APP_MODE", "dev"))
+    mode_config = config_data.get("modes", {}).get(resolved_mode, {})
+    if not mode_config:
+        raise ConfigurationException(
+            f"mode '{resolved_mode}' is not defined in '{config_file}'",
+            "MODE_CONFIG_MISSING",
+        )
+
+    app_env_host = os.getenv("APP_HOST")
+    app_env_port = os.getenv("APP_PORT")
+    grpc_env_host = os.getenv("GRPC_HOST")
+    grpc_env_port = os.getenv("GRPC_PORT")
+    qmt_userdata_override = os.getenv("QMT_USERDATA_PATH")
+    api_keys_override = os.getenv("APP_API_KEYS")
+    debug_override = os.getenv("APP_DEBUG")
+    enable_prod_orders_override = os.getenv("APP_ENABLE_PROD_ORDERS")
+    xtquant_config = config_data.get("xtquant", {})
+    xtquant_data_config = xtquant_config.get("data", {})
+    xtquant_trading_config = xtquant_config.get("trading", {})
+
+    resolved_api_keys = (
+        [item.strip() for item in api_keys_override.split(",") if item.strip()]
+        if api_keys_override
+        else mode_config.get("api_keys", [])
+    )
+
+    testing_config = config_data.get("testing", {})
+    qmt_userdata_path = (
+        qmt_userdata_override
+        or xtquant_config.get("qmt_userdata_path")
+        or xtquant_data_config.get("qmt_userdata_path")
+    )
+
+    final_config = {
+        "app": {
+            "name": config_data.get("app", {}).get("name", "xtquant-proxy"),
+            "version": config_data.get("app", {}).get("version", "1.0.0"),
+            "debug": (
+                _env_flag("APP_DEBUG", False)
+                if debug_override is not None
+                else mode_config.get("debug", False)
+            ),
+            "host": app_env_host or mode_config.get("host", "0.0.0.0"),
+            "port": int(app_env_port or mode_config.get("port", 8000)),
+        },
+        "logging": {
+            "level": mode_config.get("log_level", "INFO"),
+            "file": config_data.get("logging", {}).get("file", "logs/app.log"),
+            "error_file": config_data.get("logging", {}).get("error_file", "logs/error.log"),
+            "format": config_data.get("logging", {}).get(
+                "format",
+                "{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {name}:{function}:{line} - {message}",
+            ),
+            "rotation": config_data.get("logging", {}).get("rotation", "10 MB"),
+            "retention": config_data.get("logging", {}).get("retention", "30 days"),
+            "compression": config_data.get("logging", {}).get("compression", "zip"),
+            "console_output": mode_config.get("logging", {}).get(
+                "console_output",
+                config_data.get("logging", {}).get("console_output", True),
+            ),
+            "backtrace": mode_config.get("logging", {}).get(
+                "backtrace",
+                config_data.get("logging", {}).get("backtrace", True),
+            ),
+            "diagnose": mode_config.get("logging", {}).get(
+                "diagnose",
+                config_data.get("logging", {}).get("diagnose", False),
+            ),
+        },
+        "xtquant": {
+            "mode": mode_config.get("xtquant_mode", resolved_mode),
+            "data": {
+                "path": xtquant_data_config.get("path", "./data"),
+                "config_path": xtquant_data_config.get("config_path", "./xtquant/config"),
+                "qmt_userdata_path": qmt_userdata_path,
+                "max_queue_size": xtquant_data_config.get("max_queue_size", 1000),
+                "max_subscriptions": xtquant_data_config.get("max_subscriptions", 100),
+                "heartbeat_interval": xtquant_data_config.get(
+                    "heartbeat_interval",
+                    xtquant_data_config.get("heartbeat_timeout", 60),
+                ),
+                "whole_quote_enabled": xtquant_data_config.get("whole_quote_enabled", False),
             },
-            "logging": {
-                "level": mode_config.get("log_level", "INFO"),
-                "file": config_data.get("logging", {}).get("file", "logs/app.log"),
-                "error_file": config_data.get("logging", {}).get("error_file", "logs/error.log"),
-                "format": config_data.get("logging", {}).get("format"),
-                "rotation": config_data.get("logging", {}).get("rotation", "10 MB"),
-                "retention": config_data.get("logging", {}).get("retention", "30 days"),
-                "compression": config_data.get("logging", {}).get("compression", "zip"),
-                # 允许模式特定配置覆盖全局配置
-                "console_output": mode_config.get("logging", {}).get("console_output", config_data.get("logging", {}).get("console_output", True)),
-                "backtrace": mode_config.get("logging", {}).get("backtrace", config_data.get("logging", {}).get("backtrace", True)),
-                "diagnose": mode_config.get("logging", {}).get("diagnose", config_data.get("logging", {}).get("diagnose", False))
+            "trading": {
+                "mock_account_id": xtquant_trading_config.get("mock_account_id", "mock_account_001"),
+                "mock_password": xtquant_trading_config.get("mock_password", "mock_password"),
+                "enable_prod_orders": (
+                    _env_flag("APP_ENABLE_PROD_ORDERS", False)
+                    if enable_prod_orders_override is not None
+                    else xtquant_trading_config.get("enable_prod_orders", False)
+                ),
+                "disconnect_timeout_seconds": float(
+                    xtquant_trading_config.get("disconnect_timeout_seconds", 3.0)
+                ),
+                "accounts": xtquant_trading_config.get("accounts", []),
             },
-            "xtquant": {
-                "mode": mode_config.get("xtquant_mode", app_mode),
-                "data": {
-                    "path": config_data.get("xtquant", {}).get("data", {}).get("path", "./data"),
-                    "config_path": config_data.get("xtquant", {}).get("data", {}).get("config_path", "./xtquant/config"),
-                    "qmt_userdata_path": config_data.get("xtquant", {}).get("qmt_userdata_path")
-                },
-                "trading": {
-                    "allow_real_trading": mode_config.get("allow_real_trading", False),
-                    "mock_account_id": "mock_account_001",
-                    "mock_password": "mock_password"
-                }
-            },
-            "security": {
-                "secret_key": config_data.get("security", {}).get("secret_key", "change-me"),
-                "api_key_header": config_data.get("security", {}).get("api_key_header", "X-API-Key"),
-                "api_keys": mode_config.get("api_keys", [])
-            },
-            "database": {
-                "url": mode_config.get("database", {}).get("url")
-            },
-            "redis": {
-                "url": mode_config.get("redis", {}).get("url")
-            },
-            "cors": mode_config.get("cors", {
+        },
+        "security": {
+            "secret_key": config_data.get("security", {}).get("secret_key", "change-me"),
+            "api_keys": resolved_api_keys,
+        },
+        "database": {
+            "url": mode_config.get("database", {}).get("url"),
+        },
+        "redis": {
+            "url": mode_config.get("redis", {}).get("url"),
+        },
+        "cors": mode_config.get(
+            "cors",
+            {
                 "allow_origins": ["*"],
                 "allow_credentials": True,
                 "allow_methods": ["*"],
-                "allow_headers": ["*"]
-            }),
-            "uvicorn": {
-                "timeout_keep_alive": config_data.get("uvicorn", {}).get("timeout_keep_alive", 5)
+                "allow_headers": ["*"],
             },
-            "grpc_enabled": config_data.get("grpc", {}).get("enabled", True),
-            "grpc_host": config_data.get("grpc", {}).get("host", "0.0.0.0"),
-            "grpc_port": config_data.get("grpc", {}).get("port", 50051),
-            "grpc_max_workers": config_data.get("grpc", {}).get("max_workers", 10),
-            "grpc_max_message_length": config_data.get("grpc", {}).get("max_message_length", 50 * 1024 * 1024),
-        }
-        
-        return Settings(**final_config)
-        
-    except Exception:
-        import traceback
-        traceback.print_exc()
-        return Settings()
+        ),
+        "uvicorn": {
+            "timeout_keep_alive": config_data.get("uvicorn", {}).get("timeout_keep_alive", 5),
+        },
+        "testing": {
+            "default_account_profile": testing_config.get("default_account_profile"),
+            "enable_prod_readonly_tests": testing_config.get("enable_prod_readonly_tests", False),
+            "qmt_userdata_path": testing_config.get("qmt_userdata_path"),
+            "prod_unlock_token": testing_config.get("prod_unlock_token"),
+        },
+        "grpc_enabled": config_data.get("grpc", {}).get("enabled", True),
+        "grpc_host": grpc_env_host or config_data.get("grpc", {}).get("host", "0.0.0.0"),
+        "grpc_port": int(grpc_env_port or config_data.get("grpc", {}).get("port", 50051)),
+        "grpc_max_workers": config_data.get("grpc", {}).get("max_workers", 10),
+        "grpc_max_message_length": config_data.get("grpc", {}).get("max_message_length", 50 * 1024 * 1024),
+        "app_servers": _normalize_app_servers(os.getenv("APP_SERVERS", "all")),
+    }
+    return Settings(**final_config)
 
 
-_settings_instance: Optional[Settings] = None
+_settings_instance: Settings | None = None
 
 
 def get_settings() -> Settings:
-    """获取配置实例（单例模式）"""
     global _settings_instance
     if _settings_instance is None:
         _settings_instance = load_config()
     return _settings_instance
 
 
-def reset_settings():
-    """重置配置实例（用于测试）"""
+def reset_settings() -> None:
     global _settings_instance
     _settings_instance = None
 
 
-# 全局配置实例（延迟加载）
 settings = None

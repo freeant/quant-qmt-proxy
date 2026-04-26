@@ -1,0 +1,18 @@
+xtquant:
+  # MiniQMT 通常使用 userdata_mini；券商 QMT / 投研端通常使用 userdata
+  qmt_userdata_path: "C:\\国金证券QMT交易端\\userdata"
+  trading:
+    enable_prod_orders: false
+    accounts:
+      - name: "sim-dev"
+        account_id: "SIM-ACCOUNT-ID"
+        account_type: "STOCK"
+        account_kind: "simulated"
+        allowed_modes: ["dev"]
+        enabled: true
+      - name: "prod-main"
+        account_id: "REAL-ACCOUNT-ID"
+        account_type: "STOCK"
+        account_kind: "real"
+        allowed_modes: ["prod"]
+        enabled: true

@@ -24,6 +24,7 @@ share/python-wheels/
 MANIFEST
 
 # Virtual Environment
+.venv/
 venv/
 env/
 ENV/
@@ -54,21 +55,33 @@ logs/
 .env
 .env.local
 .env.*.local
+config.local.yml
+config.test.local.yml
 
 # QMT related
+# Local xtquant/QMT drop-ins
 xtquant/
 data/
 userdata_mini/
 
 # Testing
 .pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.hypothesis/
+.cache/
 .coverage
+coverage.xml
 htmlcov/
 .tox/
+pytestdebug.log
 
 # Temporary files
 *.tmp
 *.temp
+*.bak
+*.orig
+*.rej
 temp/
 tmp/
 

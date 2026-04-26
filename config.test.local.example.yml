@@ -1,0 +1,21 @@
+testing:
+  default_account_profile: "sim-dev"
+  enable_prod_readonly_tests: false
+  qmt_userdata_path: "C:\\国金证券QMT交易端\\userdata"
+  prod_unlock_token: "change-this-before-prod-tests"
+
+xtquant:
+  trading:
+    accounts:
+      - name: "sim-dev"
+        account_id: "SIM-ACCOUNT-ID"
+        account_type: "STOCK"
+        account_kind: "simulated"
+        allowed_modes: ["dev"]
+        enabled: true
+      - name: "prod-readonly"
+        account_id: "REAL-ACCOUNT-ID"
+        account_type: "STOCK"
+        account_kind: "real"
+        allowed_modes: ["prod"]
+        enabled: true

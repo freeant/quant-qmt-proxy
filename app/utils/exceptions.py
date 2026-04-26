@@ -57,9 +57,16 @@ def create_error_response(
 def handle_xtquant_exception(exc: XTQuantException) -> HTTPException:
     """处理xtquant异常"""
     if isinstance(exc, DataServiceException):
-        # 对于验证相关的错误（如空列表），使用422状态码
-        if exc.error_code in ["EMPTY_SYMBOLS", "INVALID_SYMBOLS"]:
+        if exc.error_code in ["EMPTY_SYMBOLS", "INVALID_SYMBOLS", "INVALID_SUBSCRIPTION_COUNT"]:
             status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+        elif exc.error_code == "MAX_SUBSCRIPTIONS_EXCEEDED":
+            status_code = status.HTTP_429_TOO_MANY_REQUESTS
+        elif exc.error_code == "WHOLE_QUOTE_DISABLED":
+            status_code = status.HTTP_403_FORBIDDEN
+        elif exc.error_code == "FEATURE_NOT_SUPPORTED":
+            status_code = status.HTTP_501_NOT_IMPLEMENTED
+        elif exc.error_code in ["XTDATA_UNAVAILABLE", "SUBSCRIPTION_FAILED"]:
+            status_code = status.HTTP_503_SERVICE_UNAVAILABLE
         else:
             status_code = status.HTTP_400_BAD_REQUEST
         
@@ -69,10 +76,20 @@ def handle_xtquant_exception(exc: XTQuantException) -> HTTPException:
             status_code=status_code
         )
     elif isinstance(exc, TradingServiceException):
+        if exc.error_code == "ORDERS_DISABLED":
+            status_code = status.HTTP_403_FORBIDDEN
+        elif exc.error_code == "SESSION_NOT_FOUND":
+            status_code = status.HTTP_404_NOT_FOUND
+        elif exc.error_code == "ACCOUNT_PROFILE_NOT_ALLOWED":
+            status_code = status.HTTP_403_FORBIDDEN
+        elif exc.error_code in {"XTTRADER_UNAVAILABLE", "TRADER_NOT_CONNECTED"}:
+            status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+        else:
+            status_code = status.HTTP_400_BAD_REQUEST
         return create_error_response(
             message=exc.message,
             error_code=exc.error_code or "TRADING_SERVICE_ERROR",
-            status_code=status.HTTP_400_BAD_REQUEST
+            status_code=status_code
         )
     elif isinstance(exc, AuthenticationException):
         return create_error_response(

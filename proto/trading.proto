@@ -4,300 +4,236 @@ package qmt.trading;
 
 import "common.proto";
 
-// ==================== 账户连接 ====================
-
-// 账户类型
-enum AccountType {
-  ACCOUNT_TYPE_UNSPECIFIED = 0;
-  ACCOUNT_TYPE_FUTURE = 1;
-  ACCOUNT_TYPE_SECURITY = 2;
-  ACCOUNT_TYPE_CREDIT = 3;
-  ACCOUNT_TYPE_FUTURE_OPTION = 4;
-  ACCOUNT_TYPE_STOCK_OPTION = 5;
+message SessionInfo {
+  string session_id = 1;
+  string account_id = 2;
+  qmt.common.SecurityAccountType account_type = 3;
+  bool is_real = 4;
+  string mode = 5;
+  int64 opened_at_ms = 6;
+  string environment = 7;
+  string account_kind = 8;
+  bool orders_enabled = 9;
+  string account_profile = 10;
 }
 
-// 连接请求
-message ConnectRequest {
+message OpenSessionRequest {
   string account_id = 1;
-  string password = 2;
-  int32 client_id = 3;
+  qmt.common.SecurityAccountType account_type = 2;
 }
 
-// 账户信息
-message AccountInfo {
-  string account_id = 1;
-  AccountType account_type = 2;
-  string account_name = 3;
-  string status = 4;
-  double balance = 5;
-  double available_balance = 6;
-  double frozen_balance = 7;
-  double market_value = 8;
-  double total_asset = 9;
+message OpenSessionResponse {
+  SessionInfo session = 1;
+  qmt.common.Status status = 2;
 }
 
-// 连接响应
-message ConnectResponse {
-  bool success = 1;
-  string message = 2;
-  string session_id = 3;
-  AccountInfo account_info = 4;
-  common.Status status = 5;
-}
-
-// 断开连接请求
-message DisconnectRequest {
+message CloseSessionRequest {
   string session_id = 1;
 }
 
-// 断开连接响应
-message DisconnectResponse {
+message CloseSessionResponse {
   bool success = 1;
-  string message = 2;
-  common.Status status = 3;
+  qmt.common.Status status = 2;
 }
 
-// ==================== 持仓查询 ====================
-
-// 持仓查询请求
-message PositionRequest {
+message GetSessionRequest {
   string session_id = 1;
 }
 
-// 持仓信息
-message PositionInfo {
-  string stock_code = 1;
-  string stock_name = 2;
-  int64 volume = 3;
-  int64 available_volume = 4;
-  int64 frozen_volume = 5;
-  double cost_price = 6;
-  double market_price = 7;
-  double market_value = 8;
-  double profit_loss = 9;
-  double profit_loss_ratio = 10;
+message GetSessionResponse {
+  SessionInfo session = 1;
+  qmt.common.Status status = 2;
 }
 
-// 持仓列表响应
-message PositionListResponse {
-  repeated PositionInfo positions = 1;
-  common.Status status = 2;
+message GetStockAssetRequest {
+  string session_id = 1;
 }
 
-// ==================== 下单交易 ====================
-
-// 订单方向
-enum OrderSide {
-  ORDER_SIDE_UNSPECIFIED = 0;
-  ORDER_SIDE_BUY = 1;
-  ORDER_SIDE_SELL = 2;
+message StockAsset {
+  string account_id = 1;
+  double cash = 2;
+  double frozen_cash = 3;
+  double market_value = 4;
+  double total_asset = 5;
+  double fetch_balance = 6;
 }
 
-// 订单类型
-enum OrderType {
-  ORDER_TYPE_UNSPECIFIED = 0;
-  ORDER_TYPE_MARKET = 1;
-  ORDER_TYPE_LIMIT = 2;
-  ORDER_TYPE_STOP = 3;
-  ORDER_TYPE_STOP_LIMIT = 4;
+message GetStockAssetResponse {
+  StockAsset asset = 1;
+  qmt.common.Status status = 2;
 }
 
-// 订单状态
-enum OrderStatus {
-  ORDER_STATUS_UNSPECIFIED = 0;
-  ORDER_STATUS_PENDING = 1;
-  ORDER_STATUS_SUBMITTED = 2;
-  ORDER_STATUS_PARTIAL_FILLED = 3;
-  ORDER_STATUS_FILLED = 4;
-  ORDER_STATUS_CANCELLED = 5;
-  ORDER_STATUS_REJECTED = 6;
+message GetStockPositionsRequest {
+  string session_id = 1;
 }
 
-// 下单请求
-message OrderRequest {
+message StockPosition {
+  string account_id = 1;
+  string stock_code = 2;
+  string instrument_name = 3;
+  int64 volume = 4;
+  int64 can_use_volume = 5;
+  int64 frozen_volume = 6;
+  int64 on_road_volume = 7;
+  int64 yesterday_volume = 8;
+  double open_price = 9;
+  double avg_price = 10;
+  double last_price = 11;
+  double market_value = 12;
+  double profit_rate = 13;
+  string direction = 14;
+  string secu_account = 15;
+}
+
+message GetStockPositionsResponse {
+  repeated StockPosition positions = 1;
+  qmt.common.Status status = 2;
+}
+
+message GetStockOrdersRequest {
+  string session_id = 1;
+  bool cancelable_only = 2;
+}
+
+message StockOrder {
+  string account_id = 1;
+  string stock_code = 2;
+  string instrument_name = 3;
+  string order_id = 4;
+  string order_sysid = 5;
+  int64 order_time_ms = 6;
+  qmt.common.OrderSide order_type = 7;
+  int64 order_volume = 8;
+  qmt.common.StockPriceType price_type = 9;
+  double price = 10;
+  int64 traded_volume = 11;
+  double traded_price = 12;
+  int32 order_status_code = 13;
+  string status_msg = 14;
+  string strategy_name = 15;
+  string order_remark = 16;
+  string direction = 17;
+  string offset_flag = 18;
+  string secu_account = 19;
+}
+
+message GetStockOrdersResponse {
+  repeated StockOrder orders = 1;
+  qmt.common.Status status = 2;
+}
+
+message GetStockTradesRequest {
+  string session_id = 1;
+}
+
+message StockTrade {
+  string account_id = 1;
+  string stock_code = 2;
+  string instrument_name = 3;
+  qmt.common.OrderSide order_type = 4;
+  string traded_id = 5;
+  int64 traded_time_ms = 6;
+  double traded_price = 7;
+  int64 traded_volume = 8;
+  double traded_amount = 9;
+  string order_id = 10;
+  string order_sysid = 11;
+  string strategy_name = 12;
+  string order_remark = 13;
+  string direction = 14;
+  string offset_flag = 15;
+  double commission = 16;
+  string secu_account = 17;
+}
+
+message GetStockTradesResponse {
+  repeated StockTrade trades = 1;
+  qmt.common.Status status = 2;
+}
+
+message SubmitStockOrderRequest {
   string session_id = 1;
   string stock_code = 2;
-  OrderSide side = 3;
-  OrderType order_type = 4;
+  qmt.common.OrderSide side = 3;
+  qmt.common.StockPriceType price_type = 4;
   int64 volume = 5;
   double price = 6;
-  string strategy_name = 7;  // 可选
+  string strategy_name = 7;
+  string order_remark = 8;
 }
 
-// 订单信息
-message OrderInfo {
-  string order_id = 1;
-  string stock_code = 2;
-  OrderSide side = 3;
-  OrderType order_type = 4;
-  int64 volume = 5;
-  double price = 6;
-  OrderStatus status = 7;
-  string submitted_time = 8;
-  int64 filled_volume = 9;
-  double filled_amount = 10;
-  double average_price = 11;
+message SubmitStockOrderResponse {
+  StockOrder order = 1;
+  qmt.common.Status status = 2;
 }
 
-// 下单响应
-message OrderResponse {
-  OrderInfo order = 1;
-  common.Status status = 2;
+message CancelBySysIdTarget {
+  string market = 1;
+  string order_sysid = 2;
 }
 
-// ==================== 撤单 ====================
-
-// 撤单请求
-message CancelOrderRequest {
+message CancelStockOrderRequest {
   string session_id = 1;
-  string order_id = 2;
+  oneof target {
+    string order_id = 2;
+    CancelBySysIdTarget sysid_target = 3;
+  }
 }
 
-// 撤单响应
-message CancelOrderResponse {
+message CancelStockOrderResponse {
   bool success = 1;
-  string message = 2;
-  common.Status status = 3;
+  qmt.common.Status status = 2;
 }
 
-// ==================== 订单查询 ====================
-
-// 订单列表请求
-message OrderListRequest {
-  string session_id = 1;
-  string start_date = 2;  // 可选
-  string end_date = 3;    // 可选
-}
-
-// 订单列表响应
-message OrderListResponse {
-  repeated OrderInfo orders = 1;
-  common.Status status = 2;
-}
-
-// ==================== 成交查询 ====================
-
-// 成交记录请求
-message TradeListRequest {
+message StreamTradingEventsRequest {
   string session_id = 1;
 }
 
-// 成交信息
-message TradeInfo {
-  string trade_id = 1;
+message AccountStatusEvent {
+  string account_id = 1;
+  qmt.common.SecurityAccountType account_type = 2;
+  int32 status_code = 3;
+}
+
+message OrderErrorEvent {
+  string account_id = 1;
   string order_id = 2;
-  string stock_code = 3;
-  OrderSide side = 4;
-  int64 volume = 5;
-  double price = 6;
-  double amount = 7;
-  string trade_time = 8;
-  double commission = 9;
+  int32 error_id = 3;
+  string error_msg = 4;
+  string strategy_name = 5;
+  string order_remark = 6;
 }
 
-// 成交列表响应
-message TradeListResponse {
-  repeated TradeInfo trades = 1;
-  common.Status status = 2;
+message CancelErrorEvent {
+  string account_id = 1;
+  string order_id = 2;
+  string order_sysid = 3;
+  int32 error_id = 4;
+  string error_msg = 5;
 }
 
-// ==================== 资产查询 ====================
-
-// 资产请求
-message AssetRequest {
-  string session_id = 1;
+message TradingEvent {
+  int64 event_time_ms = 1;
+  oneof payload {
+    AccountStatusEvent account_status = 2;
+    StockAsset asset_update = 3;
+    StockOrder order_update = 4;
+    StockTrade trade_update = 5;
+    StockPosition position_update = 6;
+    OrderErrorEvent order_error = 7;
+    CancelErrorEvent cancel_error = 8;
+  }
 }
-
-// 资产信息
-message AssetInfo {
-  double total_asset = 1;
-  double market_value = 2;
-  double cash = 3;
-  double frozen_cash = 4;
-  double available_cash = 5;
-  double profit_loss = 6;
-  double profit_loss_ratio = 7;
-}
-
-// 资产响应
-message AssetResponse {
-  AssetInfo asset = 1;
-  common.Status status = 2;
-}
-
-// ==================== 风险信息 ====================
-
-// 风险信息请求
-message RiskInfoRequest {
-  string session_id = 1;
-}
-
-// 风险信息响应
-message RiskInfoResponse {
-  double position_ratio = 1;
-  double cash_ratio = 2;
-  double max_drawdown = 3;
-  double var_95 = 4;
-  double var_99 = 5;
-  common.Status status = 6;
-}
-
-// ==================== 策略信息 ====================
-
-// 策略列表请求
-message StrategyListRequest {
-  string session_id = 1;
-}
-
-// 策略信息
-message StrategyInfo {
-  string strategy_name = 1;
-  string strategy_type = 2;
-  string status = 3;
-  string created_time = 4;
-  string last_update_time = 5;
-  map<string, string> parameters = 6;
-}
-
-// 策略列表响应
-message StrategyListResponse {
-  repeated StrategyInfo strategies = 1;
-  common.Status status = 2;
-}
-
-// ==================== 交易服务定义 ====================
 
 service TradingService {
-  // 连接账户（一元调用）
-  rpc Connect(ConnectRequest) returns (ConnectResponse);
-  
-  // 断开账户（一元调用）
-  rpc Disconnect(DisconnectRequest) returns (DisconnectResponse);
-  
-  // 获取账户信息（一元调用）
-  rpc GetAccountInfo(DisconnectRequest) returns (ConnectResponse);
-  
-  // 获取持仓列表（一元调用）
-  rpc GetPositions(PositionRequest) returns (PositionListResponse);
-  
-  // 提交订单（一元调用）
-  rpc SubmitOrder(OrderRequest) returns (OrderResponse);
-  
-  // 撤销订单（一元调用）
-  rpc CancelOrder(CancelOrderRequest) returns (CancelOrderResponse);
-  
-  // 获取订单列表（一元调用）
-  rpc GetOrders(OrderListRequest) returns (OrderListResponse);
-  
-  // 获取成交记录（一元调用）
-  rpc GetTrades(TradeListRequest) returns (TradeListResponse);
-  
-  // 获取资产信息（一元调用）
-  rpc GetAsset(AssetRequest) returns (AssetResponse);
-  
-  // 获取风险信息（一元调用）
-  rpc GetRiskInfo(RiskInfoRequest) returns (RiskInfoResponse);
-  
-  // 获取策略列表（一元调用）
-  rpc GetStrategies(StrategyListRequest) returns (StrategyListResponse);
+  rpc OpenSession(OpenSessionRequest) returns (OpenSessionResponse);
+  rpc CloseSession(CloseSessionRequest) returns (CloseSessionResponse);
+  rpc GetSession(GetSessionRequest) returns (GetSessionResponse);
+  rpc GetStockAsset(GetStockAssetRequest) returns (GetStockAssetResponse);
+  rpc GetStockPositions(GetStockPositionsRequest) returns (GetStockPositionsResponse);
+  rpc GetStockOrders(GetStockOrdersRequest) returns (GetStockOrdersResponse);
+  rpc GetStockTrades(GetStockTradesRequest) returns (GetStockTradesResponse);
+  rpc SubmitStockOrder(SubmitStockOrderRequest) returns (SubmitStockOrderResponse);
+  rpc CancelStockOrder(CancelStockOrderRequest) returns (CancelStockOrderResponse);
+  rpc StreamTradingEvents(StreamTradingEventsRequest) returns (stream TradingEvent);
 }

@@ -1,112 +1,155 @@
-"""
-依赖注入模块
-"""
-import os
-import sys
+"""依赖注入模块。"""
+
+from __future__ import annotations
+
 from typing import Optional
 
 from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-# 添加xtquant包到Python路径
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-
-from app.config import Settings, get_settings
+from app.config import Settings, XTQuantMode, get_settings
+from app.services.market_data_service import MarketDataService
+from app.services.reference_data_service import ReferenceDataService
+from app.services.trading_event_hub import TradingEventHub
+from app.services.trading_session_manager import TradingSessionManager
+from app.services.ui_subscription_service import UiSubscriptionService
+from app.services.xtdata_gateway import XtDataGateway
+from app.services.xtdata_subscription_hub import XtDataSubscriptionHub
 from app.utils.exceptions import AuthenticationException
 from app.utils.logger import logger
 
-# 安全方案
 security = HTTPBearer(auto_error=False)
 
-
-# 全局服务实例（单例模式）
-_data_service_instance = None
-_trading_service_instance = None
-_subscription_manager_instance = None
-
-
-def get_data_service(settings: Settings = Depends(get_settings)):
-    """获取DataService单例实例"""
-    global _data_service_instance
-    
-    if _data_service_instance is None:
-        from app.services.data_service import DataService
-        logger.info("初始化 DataService...")
-        _data_service_instance = DataService(settings)
-    
-    return _data_service_instance
+_xtdata_gateway: XtDataGateway | None = None
+_subscription_hub: XtDataSubscriptionHub | None = None
+_market_data_service: MarketDataService | None = None
+_reference_data_service: ReferenceDataService | None = None
+_ui_subscription_service: UiSubscriptionService | None = None
+_trading_event_hub: TradingEventHub | None = None
+_trading_session_manager: TradingSessionManager | None = None
 
 
-def get_trading_service(settings: Settings = Depends(get_settings)):
-    """获取TradingService单例实例"""
-    global _trading_service_instance
-    
-    if _trading_service_instance is None:
-        from app.services.trading_service import TradingService
-        logger.info("初始化 TradingService...")
-        _trading_service_instance = TradingService(settings)
-    
-    return _trading_service_instance
+def get_xtdata_gateway(settings: Settings = Depends(get_settings)) -> XtDataGateway:
+    global _xtdata_gateway
+    if _xtdata_gateway is None:
+        _xtdata_gateway = XtDataGateway(settings)
+    return _xtdata_gateway
 
 
-def get_subscription_manager(settings: Settings = Depends(get_settings)):
-    """获取SubscriptionManager单例实例"""
-    global _subscription_manager_instance
-    
-    if _subscription_manager_instance is None:
-        from app.services.subscription_manager import SubscriptionManager
-        logger.info("初始化 SubscriptionManager...")
-        _subscription_manager_instance = SubscriptionManager(settings)
-    
-    return _subscription_manager_instance
+def get_subscription_hub(settings: Settings = Depends(get_settings)) -> XtDataSubscriptionHub:
+    global _subscription_hub
+    if _subscription_hub is None:
+        _subscription_hub = XtDataSubscriptionHub(settings, get_xtdata_gateway(settings))
+    return _subscription_hub
+
+
+def get_market_data_service(settings: Settings = Depends(get_settings)) -> MarketDataService:
+    global _market_data_service
+    if _market_data_service is None:
+        _market_data_service = MarketDataService(
+            get_xtdata_gateway(settings),
+            get_subscription_hub(settings),
+        )
+    return _market_data_service
+
+
+def get_reference_data_service(settings: Settings = Depends(get_settings)) -> ReferenceDataService:
+    global _reference_data_service
+    if _reference_data_service is None:
+        _reference_data_service = ReferenceDataService(get_xtdata_gateway(settings))
+    return _reference_data_service
+
+
+def get_ui_subscription_service(settings: Settings = Depends(get_settings)) -> UiSubscriptionService:
+    global _ui_subscription_service
+    if _ui_subscription_service is None:
+        _ui_subscription_service = UiSubscriptionService(get_subscription_hub(settings))
+    return _ui_subscription_service
+
+
+def get_trading_event_hub() -> TradingEventHub:
+    global _trading_event_hub
+    if _trading_event_hub is None:
+        _trading_event_hub = TradingEventHub()
+    return _trading_event_hub
+
+
+def get_trading_session_manager(settings: Settings = Depends(get_settings)) -> TradingSessionManager:
+    global _trading_session_manager
+    if _trading_session_manager is None:
+        _trading_session_manager = TradingSessionManager(settings, get_trading_event_hub())
+    return _trading_session_manager
+
+
+# Backward-compatible aliases used by some existing modules/tests.
+get_data_service = get_market_data_service
+get_subscription_manager = get_subscription_hub
+get_trading_service = get_trading_session_manager
 
 
 async def get_api_key(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
-    settings: Settings = Depends(get_settings)
+    settings: Settings = Depends(get_settings),
 ) -> Optional[str]:
-    """获取API密钥"""
     if not credentials:
         return None
-    
-    # 这里可以添加API密钥验证逻辑
-    # 目前简单返回token
     return credentials.credentials
 
 
 async def verify_api_key(
     api_key: Optional[str] = Depends(get_api_key),
-    settings: Settings = Depends(get_settings)
-) -> str:
-    """验证API密钥"""
+    settings: Settings = Depends(get_settings),
+) -> Optional[str]:
+    configured_keys = settings.security.api_keys
+    if not configured_keys:
+        return api_key
     if not api_key:
-        raise AuthenticationException("API密钥缺失")
-    
-    # 验证API密钥是否在允许列表中
-    if settings.security.api_keys and api_key not in settings.security.api_keys:
-        raise AuthenticationException("无效的API密钥")
-    
+        logger.warning("API key verification failed: missing bearer token")
+        raise AuthenticationException("缺少 API 密钥")
+    if api_key not in configured_keys:
+        logger.warning("API key verification failed: invalid bearer token")
+        raise AuthenticationException("无效的 API 密钥")
     return api_key
 
 
-def get_xtquant_data_path(settings: Settings = Depends(get_settings)) -> str:
-    """获取xtquant数据路径"""
-    return settings.xtquant.data.path
-
-
-def get_xtquant_config_path(settings: Settings = Depends(get_settings)) -> str:
-    """获取xtquant配置路径"""
-    return settings.xtquant.data.config_path
-
-
-def get_xtquant_mode(settings: Settings = Depends(get_settings)) -> str:
-    """获取xtquant接口模式"""
-    return settings.xtquant.mode.value
-
-
 def is_real_trading_allowed(settings: Settings = Depends(get_settings)) -> bool:
-    """检查是否允许真实交易"""
-    return (
-        settings.xtquant.mode.value == "real" and 
-        settings.xtquant.trading.allow_real_trading
-    )
+    if settings.xtquant.mode == XTQuantMode.DEV:
+        return any(
+            profile.enabled and profile.account_kind.value == "simulated" and XTQuantMode.DEV in profile.allowed_modes
+            for profile in settings.xtquant.trading.accounts
+        )
+    if settings.xtquant.mode == XTQuantMode.PROD:
+        return any(
+            profile.enabled and profile.account_kind.value == "real" and XTQuantMode.PROD in profile.allowed_modes
+            for profile in settings.xtquant.trading.accounts
+        ) and settings.xtquant.trading.enable_prod_orders
+    return settings.xtquant.mode == XTQuantMode.MOCK
+
+
+def reset_services() -> None:
+    global _xtdata_gateway
+    global _subscription_hub
+    global _market_data_service
+    global _reference_data_service
+    global _ui_subscription_service
+    global _trading_event_hub
+    global _trading_session_manager
+
+    if _subscription_hub is not None:
+        try:
+            _subscription_hub.shutdown()
+        except Exception:
+            pass
+    if _trading_session_manager is not None:
+        try:
+            _trading_session_manager.shutdown()
+        except Exception:
+            pass
+
+    _xtdata_gateway = None
+    _subscription_hub = None
+    _market_data_service = None
+    _reference_data_service = None
+    _ui_subscription_service = None
+    _trading_event_hub = None
+    _trading_session_manager = None

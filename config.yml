@@ -1,57 +1,58 @@
-# xtquant-proxy 配置文件
-# 使用环境变量 APP_MODE 切换模式: mock, dev, prod
-# 例如: set APP_MODE=dev (Windows) 或 export APP_MODE=dev (Linux/Mac)
+# xtquant-proxy configuration
+# Switch runtime mode with APP_MODE=mock|dev|prod
 
 app:
   name: "xtquant-proxy"
   version: "1.0.0"
 
-# 日志配置
 logging:
-  file: "logs/app.log"  # 主日志文件
-  error_file: "logs/error.log"  # 错误日志文件（仅ERROR及以上级别）
+  file: "logs/app.log"
+  error_file: "logs/error.log"
   format: "{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {name}:{function}:{line} - {message}"
-  rotation: "10 MB"  # 日志文件轮转大小（可选：10 MB, 500 KB, 1 day, 12:00 等）
-  retention: "30 days"  # 日志保留时间（可选：30 days, 1 week, 2 months 等）
-  compression: "zip"  # 压缩格式（可选：zip, gz, tar.gz, bz2）
-  console_output: true  # 是否同时输出到控制台（开发时建议true，生产可设为false）
-  backtrace: true  # 是否显示完整堆栈跟踪
-  diagnose: false  # 是否显示诊断信息（仅在调试复杂问题时启用）
+  rotation: "10 MB"
+  retention: "30 days"
+  compression: "zip"
+  console_output: true
+  backtrace: true
+  diagnose: false
 
-# gRPC 配置
 grpc:
   enabled: true
   host: "0.0.0.0"
   port: 50051
   max_workers: 10
-  max_message_length: 52428800  # 50MB
+  max_message_length: 52428800
 
-# xtquant配置
 xtquant:
-  # QMT安装路径
-  qmt_userdata_path: "D:\\国金QMT交易端模拟\\userdata_mini"
-  
-  # 数据路径配置
+  # 在 config.local.yml / config.test.local.yml 中填写本机路径
+  # MiniQMT 通常使用 userdata_mini；券商 QMT / 投研端通常使用 userdata
+  qmt_userdata_path:
   data:
     path: "./data"
     config_path: "./xtquant/config"
-    # 行情订阅配置
-    max_queue_size: 1000  # 每个订阅队列最大长度
-    max_subscriptions: 100  # 单实例最大订阅数
-    heartbeat_timeout: 60  # WebSocket心跳超时（秒）
-    whole_quote_enabled: false  # 是否允许全推订阅（生产环境慎开）
+    max_queue_size: 1000
+    max_subscriptions: 100
+    heartbeat_interval: 60
+    whole_quote_enabled: false
+  trading:
+    mock_account_id: "mock_account_001"
+    mock_password: "mock_password"
+    enable_prod_orders: false
+    accounts: []
 
-# 模式配置 (通过环境变量 APP_MODE 选择: mock, dev, prod)
+testing:
+  default_account_profile:
+  enable_prod_readonly_tests: false
+  qmt_userdata_path:
+  prod_unlock_token:
+
 modes:
-  # mock模式: 不连接xtquant，使用模拟数据，不允许交易
   mock:
     debug: true
     host: "0.0.0.0"
     port: 8000
     log_level: "DEBUG"
     xtquant_mode: "mock"
-    allow_real_trading: false
-    connect_xtquant: false
     api_keys:
       - "mock-api-key-001"
       - "mock-api-key-002"
@@ -61,16 +62,13 @@ modes:
       url: "redis://localhost:6379/0"
     cors:
       allow_origins: ["*"]
-  
-  # dev模式: 连接xtquant，获取真实数据，不允许交易
+
   dev:
     debug: true
     host: "0.0.0.0"
     port: 8000
     log_level: "DEBUG"
     xtquant_mode: "dev"
-    allow_real_trading: false
-    connect_xtquant: true
     api_keys:
       - "dev-api-key-001"
       - "dev-api-key-002"
@@ -80,16 +78,13 @@ modes:
       url: "redis://localhost:6379/1"
     cors:
       allow_origins: ["*"]
-  
-  # prod模式: 连接xtquant，获取真实数据，允许真实交易
+
   prod:
     debug: false
     host: "0.0.0.0"
     port: 8000
     log_level: "INFO"
     xtquant_mode: "prod"
-    allow_real_trading: true
-    connect_xtquant: true
     api_keys:
       - "prod-api-key-001"
       - "prod-api-key-002"
@@ -99,12 +94,9 @@ modes:
       url: "redis://localhost:6379/0"
     cors:
       allow_origins: ["https://yourdomain.com"]
-    # 生产环境可以关闭控制台输出，只输出到文件
     logging:
       console_output: false
       diagnose: false
 
-# 安全配置
 security:
   secret_key: "change-this-to-secure-key-in-production"
-  api_key_header: "X-API-Key"

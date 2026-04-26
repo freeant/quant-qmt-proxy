@@ -1,489 +1,293 @@
-"""
-gRPC 交易服务实现
-"""
-
-from datetime import datetime
+from __future__ import annotations
 
 import grpc
 
-from app.models.trading_models import (
-    AccountType as RestAccountType,
-    CancelOrderRequest as RestCancelOrderRequest,
-    ConnectRequest as RestConnectRequest,
-    OrderRequest as RestOrderRequest,
-    OrderSide as RestOrderSide,
-    OrderType as RestOrderType,
-)
-
-# 导入现有服务
-from app.services.trading_service import TradingService
+from app.services.contracts import CancelStockOrderCommand, OpenSessionCommand, SubmitStockOrderCommand
+from app.services.trading_session_manager import TradingSessionManager
 from app.utils.exceptions import TradingServiceException
-
-# 导入生成的 protobuf 代码
 from generated import common_pb2, trading_pb2, trading_pb2_grpc
 
 
+ACCOUNT_TYPE_FROM_PROTO = {
+    common_pb2.SECURITY_ACCOUNT_TYPE_STOCK: "STOCK",
+    common_pb2.SECURITY_ACCOUNT_TYPE_CREDIT: "CREDIT",
+    common_pb2.SECURITY_ACCOUNT_TYPE_FUTURE: "FUTURE",
+    common_pb2.SECURITY_ACCOUNT_TYPE_FUTURE_OPTION: "FUTURE_OPTION",
+    common_pb2.SECURITY_ACCOUNT_TYPE_STOCK_OPTION: "STOCK_OPTION",
+    common_pb2.SECURITY_ACCOUNT_TYPE_HUGANGTONG: "HUGANGTONG",
+    common_pb2.SECURITY_ACCOUNT_TYPE_SHENGANGTONG: "SHENGANGTONG",
+    common_pb2.SECURITY_ACCOUNT_TYPE_NEW3BOARD: "NEW3BOARD",
+    common_pb2.SECURITY_ACCOUNT_TYPE_INCOME_SWAP: "INCOME_SWAP",
+}
+ACCOUNT_TYPE_TO_PROTO = {value: key for key, value in ACCOUNT_TYPE_FROM_PROTO.items()}
+
+
 class TradingGrpcService(trading_pb2_grpc.TradingServiceServicer):
-    """gRPC 交易服务实现"""
+    def __init__(self, trading_manager: TradingSessionManager):
+        self.trading_manager = trading_manager
 
-    def __init__(self, trading_service: TradingService):
-        self.trading_service = trading_service
-
-    def Connect(
-        self, request: trading_pb2.ConnectRequest, context: grpc.ServicerContext
-    ) -> trading_pb2.ConnectResponse:
-        """连接账户"""
+    def OpenSession(self, request, context):
         try:
-            # 转换请求
-            rest_request = RestConnectRequest(
-                account_id=request.account_id,
-                password=request.password if request.password else None,
-                client_id=request.client_id if request.client_id else None,
-            )
-
-            # 调用服务
-            result = self.trading_service.connect_account(rest_request)
-
-            # 转换响应
-            account_info = None
-            if result.account_info:
-                account_info = self._convert_account_info(result.account_info)
-
-            return trading_pb2.ConnectResponse(
-                success=result.success,
-                message=result.message,
-                session_id=result.session_id or "",
-                account_info=account_info,
-                status=common_pb2.Status(code=0 if result.success else 400, message=result.message),
-            )
-
-        except TradingServiceException as e:
-            context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
-            context.set_details(str(e))
-            return trading_pb2.ConnectResponse(
-                success=False, message=str(e), status=common_pb2.Status(code=400, message=str(e))
-            )
-        except Exception as e:
-            context.set_code(grpc.StatusCode.INTERNAL)
-            context.set_details(str(e))
-            return trading_pb2.ConnectResponse(
-                success=False, message=str(e), status=common_pb2.Status(code=500, message=str(e))
-            )
-
-    def Disconnect(
-        self, request: trading_pb2.DisconnectRequest, context: grpc.ServicerContext
-    ) -> trading_pb2.DisconnectResponse:
-        """断开账户"""
-        try:
-            # 调用服务
-            success = self.trading_service.disconnect_account(request.session_id)
-
-            return trading_pb2.DisconnectResponse(
-                success=success,
-                message="断开账户成功" if success else "断开账户失败",
-                status=common_pb2.Status(
-                    code=0 if success else 400, message="success" if success else "failed"
-                ),
-            )
-
-        except TradingServiceException as e:
-            context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
-            context.set_details(str(e))
-            return trading_pb2.DisconnectResponse(
-                success=False, message=str(e), status=common_pb2.Status(code=400, message=str(e))
-            )
-        except Exception as e:
-            context.set_code(grpc.StatusCode.INTERNAL)
-            context.set_details(str(e))
-            return trading_pb2.DisconnectResponse(
-                success=False, message=str(e), status=common_pb2.Status(code=500, message=str(e))
-            )
-
-    def GetAccountInfo(
-        self, request: trading_pb2.DisconnectRequest, context: grpc.ServicerContext
-    ) -> trading_pb2.ConnectResponse:
-        """获取账户信息"""
-        try:
-            # 调用服务
-            result = self.trading_service.get_account_info(request.session_id)
-
-            # 转换响应
-            account_info = self._convert_account_info(result)
-
-            return trading_pb2.ConnectResponse(
-                success=True,
-                message="获取账户信息成功",
-                session_id=request.session_id,
-                account_info=account_info,
-                status=common_pb2.Status(code=0, message="success"),
-            )
-
-        except TradingServiceException as e:
-            context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
-            context.set_details(str(e))
-            return trading_pb2.ConnectResponse(
-                success=False, message=str(e), status=common_pb2.Status(code=400, message=str(e))
-            )
-        except Exception as e:
-            context.set_code(grpc.StatusCode.INTERNAL)
-            context.set_details(str(e))
-            return trading_pb2.ConnectResponse(
-                success=False, message=str(e), status=common_pb2.Status(code=500, message=str(e))
-            )
-
-    def GetPositions(
-        self, request: trading_pb2.PositionRequest, context: grpc.ServicerContext
-    ) -> trading_pb2.PositionListResponse:
-        """获取持仓列表"""
-        try:
-            # 调用服务
-            results = self.trading_service.get_positions(request.session_id)
-
-            # 转换响应
-            positions = []
-            for result in results:
-                position = trading_pb2.PositionInfo(
-                    stock_code=result.stock_code,
-                    stock_name=result.stock_name,
-                    volume=result.volume,
-                    available_volume=result.available_volume,
-                    frozen_volume=result.frozen_volume,
-                    cost_price=result.cost_price,
-                    market_price=result.market_price,
-                    market_value=result.market_value,
-                    profit_loss=result.profit_loss,
-                    profit_loss_ratio=result.profit_loss_ratio,
+            session = self.trading_manager.open_session(
+                OpenSessionCommand(
+                    account_id=request.account_id,
+                    account_type=ACCOUNT_TYPE_FROM_PROTO.get(request.account_type, "STOCK"),
                 )
-                positions.append(position)
-
-            return trading_pb2.PositionListResponse(
-                positions=positions, status=common_pb2.Status(code=0, message="success")
             )
+            return trading_pb2.OpenSessionResponse(session=self._to_session_info(session), status=self._status())
+        except TradingServiceException as exc:
+            return self._error_response(context, exc, trading_pb2.OpenSessionResponse)
 
-        except TradingServiceException as e:
-            context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
-            context.set_details(str(e))
-            return trading_pb2.PositionListResponse(
-                status=common_pb2.Status(code=400, message=str(e))
-            )
-        except Exception as e:
-            context.set_code(grpc.StatusCode.INTERNAL)
-            context.set_details(str(e))
-            return trading_pb2.PositionListResponse(
-                status=common_pb2.Status(code=500, message=str(e))
-            )
-
-    def SubmitOrder(
-        self, request: trading_pb2.OrderRequest, context: grpc.ServicerContext
-    ) -> trading_pb2.OrderResponse:
-        """提交订单"""
+    def CloseSession(self, request, context):
         try:
-            # 转换请求
-            rest_request = self._convert_order_request(request)
+            success = self.trading_manager.close_session(request.session_id)
+            return trading_pb2.CloseSessionResponse(success=success, status=self._status())
+        except TradingServiceException as exc:
+            return self._error_response(context, exc, trading_pb2.CloseSessionResponse)
 
-            # 调用服务
-            result = self.trading_service.submit_order(request.session_id, rest_request)
-
-            # 转换响应
-            order_info = self._convert_order_info(result)
-
-            return trading_pb2.OrderResponse(
-                order=order_info, status=common_pb2.Status(code=0, message="success")
-            )
-
-        except TradingServiceException as e:
-            context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
-            context.set_details(str(e))
-            return trading_pb2.OrderResponse(status=common_pb2.Status(code=400, message=str(e)))
-        except Exception as e:
-            context.set_code(grpc.StatusCode.INTERNAL)
-            context.set_details(str(e))
-            return trading_pb2.OrderResponse(status=common_pb2.Status(code=500, message=str(e)))
-
-    def CancelOrder(
-        self, request: trading_pb2.CancelOrderRequest, context: grpc.ServicerContext
-    ) -> trading_pb2.CancelOrderResponse:
-        """撤销订单"""
+    def GetSession(self, request, context):
         try:
-            # 转换请求
-            rest_request = RestCancelOrderRequest(order_id=request.order_id)
+            session = self.trading_manager.get_session(request.session_id)
+            return trading_pb2.GetSessionResponse(session=self._to_session_info(session), status=self._status())
+        except TradingServiceException as exc:
+            return self._error_response(context, exc, trading_pb2.GetSessionResponse)
 
-            # 调用服务
-            success = self.trading_service.cancel_order(request.session_id, rest_request)
-
-            return trading_pb2.CancelOrderResponse(
-                success=success,
-                message="撤销订单成功" if success else "撤销订单失败",
-                status=common_pb2.Status(
-                    code=0 if success else 400, message="success" if success else "failed"
-                ),
-            )
-
-        except TradingServiceException as e:
-            context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
-            context.set_details(str(e))
-            return trading_pb2.CancelOrderResponse(
-                success=False, message=str(e), status=common_pb2.Status(code=400, message=str(e))
-            )
-        except Exception as e:
-            context.set_code(grpc.StatusCode.INTERNAL)
-            context.set_details(str(e))
-            return trading_pb2.CancelOrderResponse(
-                success=False, message=str(e), status=common_pb2.Status(code=500, message=str(e))
-            )
-
-    def GetOrders(
-        self, request: trading_pb2.OrderListRequest, context: grpc.ServicerContext
-    ) -> trading_pb2.OrderListResponse:
-        """获取订单列表"""
+    def GetStockAsset(self, request, context):
         try:
-            # 调用服务
-            results = self.trading_service.get_orders(request.session_id)
+            asset = self.trading_manager.get_stock_asset(request.session_id)
+            return trading_pb2.GetStockAssetResponse(asset=self._to_stock_asset(asset), status=self._status())
+        except TradingServiceException as exc:
+            return self._error_response(context, exc, trading_pb2.GetStockAssetResponse)
 
-            # 转换响应
-            orders = []
-            for result in results:
-                order_info = self._convert_order_info(result)
-                orders.append(order_info)
-
-            return trading_pb2.OrderListResponse(
-                orders=orders, status=common_pb2.Status(code=0, message="success")
-            )
-
-        except TradingServiceException as e:
-            context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
-            context.set_details(str(e))
-            return trading_pb2.OrderListResponse(status=common_pb2.Status(code=400, message=str(e)))
-        except Exception as e:
-            context.set_code(grpc.StatusCode.INTERNAL)
-            context.set_details(str(e))
-            return trading_pb2.OrderListResponse(status=common_pb2.Status(code=500, message=str(e)))
-
-    def GetTrades(
-        self, request: trading_pb2.TradeListRequest, context: grpc.ServicerContext
-    ) -> trading_pb2.TradeListResponse:
-        """获取成交记录"""
+    def GetStockPositions(self, request, context):
         try:
-            # 调用服务
-            results = self.trading_service.get_trades(request.session_id)
+            positions = self.trading_manager.get_stock_positions(request.session_id)
+            return trading_pb2.GetStockPositionsResponse(
+                positions=[self._to_stock_position(item) for item in positions],
+                status=self._status(),
+            )
+        except TradingServiceException as exc:
+            return self._error_response(context, exc, trading_pb2.GetStockPositionsResponse)
 
-            # 转换响应
-            trades = []
-            for result in results:
-                side_map = {"BUY": trading_pb2.ORDER_SIDE_BUY, "SELL": trading_pb2.ORDER_SIDE_SELL}
+    def GetStockOrders(self, request, context):
+        try:
+            orders = self.trading_manager.get_stock_orders(
+                request.session_id,
+                cancelable_only=request.cancelable_only,
+            )
+            return trading_pb2.GetStockOrdersResponse(
+                orders=[self._to_stock_order(item) for item in orders],
+                status=self._status(),
+            )
+        except TradingServiceException as exc:
+            return self._error_response(context, exc, trading_pb2.GetStockOrdersResponse)
 
-                trade = trading_pb2.TradeInfo(
-                    trade_id=result.trade_id,
-                    order_id=result.order_id,
-                    stock_code=result.stock_code,
-                    side=side_map.get(result.side, trading_pb2.ORDER_SIDE_UNSPECIFIED),
-                    volume=result.volume,
-                    price=result.price,
-                    amount=result.amount,
-                    trade_time=result.trade_time.isoformat()
-                    if isinstance(result.trade_time, datetime)
-                    else str(result.trade_time),
-                    commission=result.commission,
+    def GetStockTrades(self, request, context):
+        try:
+            trades = self.trading_manager.get_stock_trades(request.session_id)
+            return trading_pb2.GetStockTradesResponse(
+                trades=[self._to_stock_trade(item) for item in trades],
+                status=self._status(),
+            )
+        except TradingServiceException as exc:
+            return self._error_response(context, exc, trading_pb2.GetStockTradesResponse)
+
+    def SubmitStockOrder(self, request, context):
+        try:
+            order = self.trading_manager.submit_stock_order(
+                SubmitStockOrderCommand(
+                    session_id=request.session_id,
+                    stock_code=request.stock_code,
+                    side=int(request.side),
+                    price_type=int(request.price_type),
+                    volume=request.volume,
+                    price=request.price,
+                    strategy_name=request.strategy_name,
+                    order_remark=request.order_remark,
                 )
-                trades.append(trade)
-
-            return trading_pb2.TradeListResponse(
-                trades=trades, status=common_pb2.Status(code=0, message="success")
             )
+            return trading_pb2.SubmitStockOrderResponse(order=self._to_stock_order(order), status=self._status())
+        except TradingServiceException as exc:
+            return self._error_response(context, exc, trading_pb2.SubmitStockOrderResponse)
 
-        except TradingServiceException as e:
-            context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
-            context.set_details(str(e))
-            return trading_pb2.TradeListResponse(status=common_pb2.Status(code=400, message=str(e)))
-        except Exception as e:
-            context.set_code(grpc.StatusCode.INTERNAL)
-            context.set_details(str(e))
-            return trading_pb2.TradeListResponse(status=common_pb2.Status(code=500, message=str(e)))
-
-    def GetAsset(
-        self, request: trading_pb2.AssetRequest, context: grpc.ServicerContext
-    ) -> trading_pb2.AssetResponse:
-        """获取资产信息"""
+    def CancelStockOrder(self, request, context):
         try:
-            # 调用服务
-            result = self.trading_service.get_asset_info(request.session_id)
-
-            # 转换响应
-            asset = trading_pb2.AssetInfo(
-                total_asset=result.total_asset,
-                market_value=result.market_value,
-                cash=result.cash,
-                frozen_cash=result.frozen_cash,
-                available_cash=result.available_cash,
-                profit_loss=result.profit_loss,
-                profit_loss_ratio=result.profit_loss_ratio,
-            )
-
-            return trading_pb2.AssetResponse(
-                asset=asset, status=common_pb2.Status(code=0, message="success")
-            )
-
-        except TradingServiceException as e:
-            context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
-            context.set_details(str(e))
-            return trading_pb2.AssetResponse(status=common_pb2.Status(code=400, message=str(e)))
-        except Exception as e:
-            context.set_code(grpc.StatusCode.INTERNAL)
-            context.set_details(str(e))
-            return trading_pb2.AssetResponse(status=common_pb2.Status(code=500, message=str(e)))
-
-    def GetRiskInfo(
-        self, request: trading_pb2.RiskInfoRequest, context: grpc.ServicerContext
-    ) -> trading_pb2.RiskInfoResponse:
-        """获取风险信息"""
-        try:
-            # 调用服务
-            result = self.trading_service.get_risk_info(request.session_id)
-
-            return trading_pb2.RiskInfoResponse(
-                position_ratio=result.position_ratio,
-                cash_ratio=result.cash_ratio,
-                max_drawdown=result.max_drawdown,
-                var_95=result.var_95,
-                var_99=result.var_99,
-                status=common_pb2.Status(code=0, message="success"),
-            )
-
-        except TradingServiceException as e:
-            context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
-            context.set_details(str(e))
-            return trading_pb2.RiskInfoResponse(status=common_pb2.Status(code=400, message=str(e)))
-        except Exception as e:
-            context.set_code(grpc.StatusCode.INTERNAL)
-            context.set_details(str(e))
-            return trading_pb2.RiskInfoResponse(status=common_pb2.Status(code=500, message=str(e)))
-
-    def GetStrategies(
-        self, request: trading_pb2.StrategyListRequest, context: grpc.ServicerContext
-    ) -> trading_pb2.StrategyListResponse:
-        """获取策略列表"""
-        try:
-            # 调用服务
-            results = self.trading_service.get_strategies(request.session_id)
-
-            # 转换响应
-            strategies = []
-            for result in results:
-                # 将parameters字典转换为map<string, string>
-                parameters = {k: str(v) for k, v in result.parameters.items()}
-
-                strategy = trading_pb2.StrategyInfo(
-                    strategy_name=result.strategy_name,
-                    strategy_type=result.strategy_type,
-                    status=result.status,
-                    created_time=result.created_time.isoformat()
-                    if isinstance(result.created_time, datetime)
-                    else str(result.created_time),
-                    last_update_time=result.last_update_time.isoformat()
-                    if isinstance(result.last_update_time, datetime)
-                    else str(result.last_update_time),
-                    parameters=parameters,
+            target = request.WhichOneof("target")
+            if target == "order_id":
+                command = CancelStockOrderCommand(session_id=request.session_id, order_id=request.order_id)
+            elif target == "sysid_target":
+                command = CancelStockOrderCommand(
+                    session_id=request.session_id,
+                    market=request.sysid_target.market,
+                    order_sysid=request.sysid_target.order_sysid,
                 )
-                strategies.append(strategy)
+            else:
+                raise TradingServiceException("cancel target is required")
 
-            return trading_pb2.StrategyListResponse(
-                strategies=strategies, status=common_pb2.Status(code=0, message="success")
-            )
+            success = self.trading_manager.cancel_stock_order(command)
+            return trading_pb2.CancelStockOrderResponse(success=success, status=self._status())
+        except TradingServiceException as exc:
+            return self._error_response(context, exc, trading_pb2.CancelStockOrderResponse)
 
-        except TradingServiceException as e:
-            context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
-            context.set_details(str(e))
-            return trading_pb2.StrategyListResponse(
-                status=common_pb2.Status(code=400, message=str(e))
-            )
-        except Exception as e:
-            context.set_code(grpc.StatusCode.INTERNAL)
-            context.set_details(str(e))
-            return trading_pb2.StrategyListResponse(
-                status=common_pb2.Status(code=500, message=str(e))
-            )
+    def StreamTradingEvents(self, request, context):
+        try:
+            stream = self.trading_manager.stream_events(request.session_id, stop_checker=context.is_active)
+            for event in stream:
+                yield self._to_trading_event(event)
+        except TradingServiceException as exc:
+            context.set_code(self._grpc_status_for_error(exc))
+            context.set_details(exc.message)
 
-    # 辅助转换方法
-
-    def _convert_account_info(self, account_info):
-        """转换账户信息"""
-        account_type_map = {
-            RestAccountType.FUTURE: trading_pb2.ACCOUNT_TYPE_FUTURE,
-            RestAccountType.SECURITY: trading_pb2.ACCOUNT_TYPE_SECURITY,
-            RestAccountType.CREDIT: trading_pb2.ACCOUNT_TYPE_CREDIT,
-            RestAccountType.FUTURE_OPTION: trading_pb2.ACCOUNT_TYPE_FUTURE_OPTION,
-            RestAccountType.STOCK_OPTION: trading_pb2.ACCOUNT_TYPE_STOCK_OPTION,
-        }
-
-        return trading_pb2.AccountInfo(
-            account_id=account_info.account_id,
-            account_type=account_type_map.get(
-                account_info.account_type, trading_pb2.ACCOUNT_TYPE_UNSPECIFIED
-            ),
-            account_name=account_info.account_name,
-            status=account_info.status,
-            balance=account_info.balance,
-            available_balance=account_info.available_balance,
-            frozen_balance=account_info.frozen_balance,
-            market_value=account_info.market_value,
-            total_asset=account_info.total_asset,
+    def _to_session_info(self, session: dict):
+        return trading_pb2.SessionInfo(
+            session_id=session["session_id"],
+            account_id=session["account_id"],
+            account_type=ACCOUNT_TYPE_TO_PROTO.get(session.get("account_type", "STOCK"), common_pb2.SECURITY_ACCOUNT_TYPE_STOCK),
+            is_real=session.get("is_real", False),
+            mode=session.get("mode", ""),
+            opened_at_ms=session.get("opened_at_ms", 0),
+            environment=session.get("environment", ""),
+            account_kind=session.get("account_kind", ""),
+            orders_enabled=session.get("orders_enabled", False),
+            account_profile=session.get("account_profile", "") or "",
         )
 
-    def _convert_order_request(self, pb_request: trading_pb2.OrderRequest) -> RestOrderRequest:
-        """转换订单请求"""
-        side_map = {
-            trading_pb2.ORDER_SIDE_BUY: RestOrderSide.BUY,
-            trading_pb2.ORDER_SIDE_SELL: RestOrderSide.SELL,
-        }
-
-        type_map = {
-            trading_pb2.ORDER_TYPE_MARKET: RestOrderType.MARKET,
-            trading_pb2.ORDER_TYPE_LIMIT: RestOrderType.LIMIT,
-            trading_pb2.ORDER_TYPE_STOP: RestOrderType.STOP,
-            trading_pb2.ORDER_TYPE_STOP_LIMIT: RestOrderType.STOP_LIMIT,
-        }
-
-        return RestOrderRequest(
-            stock_code=pb_request.stock_code,
-            side=side_map.get(pb_request.side, RestOrderSide.BUY),
-            order_type=type_map.get(pb_request.order_type, RestOrderType.LIMIT),
-            volume=int(pb_request.volume),
-            price=pb_request.price if pb_request.price else None,
-            strategy_name=pb_request.strategy_name if pb_request.strategy_name else None,
+    def _to_stock_asset(self, asset: dict):
+        return trading_pb2.StockAsset(
+            account_id=asset.get("account_id", ""),
+            cash=asset.get("cash", 0.0),
+            frozen_cash=asset.get("frozen_cash", 0.0),
+            market_value=asset.get("market_value", 0.0),
+            total_asset=asset.get("total_asset", 0.0),
+            fetch_balance=asset.get("fetch_balance", 0.0),
         )
 
-    def _convert_order_info(self, order_response):
-        """转换订单信息"""
-        side_map = {"BUY": trading_pb2.ORDER_SIDE_BUY, "SELL": trading_pb2.ORDER_SIDE_SELL}
-
-        type_map = {
-            "MARKET": trading_pb2.ORDER_TYPE_MARKET,
-            "LIMIT": trading_pb2.ORDER_TYPE_LIMIT,
-            "STOP": trading_pb2.ORDER_TYPE_STOP,
-            "STOP_LIMIT": trading_pb2.ORDER_TYPE_STOP_LIMIT,
-        }
-
-        status_map = {
-            "PENDING": trading_pb2.ORDER_STATUS_PENDING,
-            "SUBMITTED": trading_pb2.ORDER_STATUS_SUBMITTED,
-            "PARTIAL_FILLED": trading_pb2.ORDER_STATUS_PARTIAL_FILLED,
-            "FILLED": trading_pb2.ORDER_STATUS_FILLED,
-            "CANCELLED": trading_pb2.ORDER_STATUS_CANCELLED,
-            "REJECTED": trading_pb2.ORDER_STATUS_REJECTED,
-        }
-
-        return trading_pb2.OrderInfo(
-            order_id=order_response.order_id,
-            stock_code=order_response.stock_code,
-            side=side_map.get(order_response.side, trading_pb2.ORDER_SIDE_UNSPECIFIED),
-            order_type=type_map.get(order_response.order_type, trading_pb2.ORDER_TYPE_UNSPECIFIED),
-            volume=order_response.volume,
-            price=order_response.price if order_response.price else 0.0,
-            status=status_map.get(order_response.status, trading_pb2.ORDER_STATUS_UNSPECIFIED),
-            submitted_time=order_response.submitted_time.isoformat()
-            if isinstance(order_response.submitted_time, datetime)
-            else str(order_response.submitted_time),
-            filled_volume=order_response.filled_volume,
-            filled_amount=order_response.filled_amount,
-            average_price=order_response.average_price if order_response.average_price else 0.0,
+    def _to_stock_position(self, item: dict):
+        return trading_pb2.StockPosition(
+            account_id=item.get("account_id", ""),
+            stock_code=item.get("stock_code", ""),
+            instrument_name=item.get("instrument_name", ""),
+            volume=item.get("volume", 0),
+            can_use_volume=item.get("can_use_volume", 0),
+            frozen_volume=item.get("frozen_volume", 0),
+            on_road_volume=item.get("on_road_volume", 0),
+            yesterday_volume=item.get("yesterday_volume", 0),
+            open_price=item.get("open_price", 0.0),
+            avg_price=item.get("avg_price", 0.0),
+            last_price=item.get("last_price", 0.0),
+            market_value=item.get("market_value", 0.0),
+            profit_rate=item.get("profit_rate", 0.0),
+            direction=item.get("direction", ""),
+            secu_account=item.get("secu_account", ""),
         )
+
+    def _to_stock_order(self, item: dict):
+        return trading_pb2.StockOrder(
+            account_id=item.get("account_id", ""),
+            stock_code=item.get("stock_code", ""),
+            instrument_name=item.get("instrument_name", ""),
+            order_id=item.get("order_id", ""),
+            order_sysid=item.get("order_sysid", ""),
+            order_time_ms=item.get("order_time_ms", 0),
+            order_type=int(item.get("order_type", 0)),
+            order_volume=item.get("order_volume", 0),
+            price_type=int(item.get("price_type", 0)),
+            price=item.get("price", 0.0),
+            traded_volume=item.get("traded_volume", 0),
+            traded_price=item.get("traded_price", 0.0),
+            order_status_code=item.get("order_status_code", 0),
+            status_msg=item.get("status_msg", ""),
+            strategy_name=item.get("strategy_name", ""),
+            order_remark=item.get("order_remark", ""),
+            direction=item.get("direction", ""),
+            offset_flag=item.get("offset_flag", ""),
+            secu_account=item.get("secu_account", ""),
+        )
+
+    def _to_stock_trade(self, item: dict):
+        return trading_pb2.StockTrade(
+            account_id=item.get("account_id", ""),
+            stock_code=item.get("stock_code", ""),
+            instrument_name=item.get("instrument_name", ""),
+            order_type=int(item.get("order_type", 0)),
+            traded_id=item.get("traded_id", ""),
+            traded_time_ms=item.get("traded_time_ms", 0),
+            traded_price=item.get("traded_price", 0.0),
+            traded_volume=item.get("traded_volume", 0),
+            traded_amount=item.get("traded_amount", 0.0),
+            order_id=item.get("order_id", ""),
+            order_sysid=item.get("order_sysid", ""),
+            strategy_name=item.get("strategy_name", ""),
+            order_remark=item.get("order_remark", ""),
+            direction=item.get("direction", ""),
+            offset_flag=item.get("offset_flag", ""),
+            commission=item.get("commission", 0.0),
+            secu_account=item.get("secu_account", ""),
+        )
+
+    def _to_account_status(self, item: dict):
+        return trading_pb2.AccountStatusEvent(
+            account_id=item.get("account_id", ""),
+            account_type=int(item.get("account_type", common_pb2.SECURITY_ACCOUNT_TYPE_STOCK)),
+            status_code=item.get("status_code", 0),
+        )
+
+    def _to_order_error(self, item: dict):
+        return trading_pb2.OrderErrorEvent(
+            account_id=item.get("account_id", ""),
+            order_id=item.get("order_id", ""),
+            error_id=item.get("error_id", 0),
+            error_msg=item.get("error_msg", ""),
+            strategy_name=item.get("strategy_name", ""),
+            order_remark=item.get("order_remark", ""),
+        )
+
+    def _to_cancel_error(self, item: dict):
+        return trading_pb2.CancelErrorEvent(
+            account_id=item.get("account_id", ""),
+            order_id=item.get("order_id", ""),
+            order_sysid=item.get("order_sysid", ""),
+            error_id=item.get("error_id", 0),
+            error_msg=item.get("error_msg", ""),
+        )
+
+    def _to_trading_event(self, event: dict):
+        payload = event.get("payload", {})
+        event_type = event.get("event_type", "")
+        message = trading_pb2.TradingEvent(event_time_ms=event.get("event_time_ms", 0))
+        if event_type == "account_status":
+            message.account_status.CopyFrom(self._to_account_status(payload))
+        elif event_type == "asset_update":
+            message.asset_update.CopyFrom(self._to_stock_asset(payload))
+        elif event_type == "order_update":
+            message.order_update.CopyFrom(self._to_stock_order(payload))
+        elif event_type == "trade_update":
+            message.trade_update.CopyFrom(self._to_stock_trade(payload))
+        elif event_type == "position_update":
+            message.position_update.CopyFrom(self._to_stock_position(payload))
+        elif event_type == "order_error":
+            message.order_error.CopyFrom(self._to_order_error(payload))
+        elif event_type == "cancel_error":
+            message.cancel_error.CopyFrom(self._to_cancel_error(payload))
+        return message
+
+    def _status(self, code: int = 0, message: str = "success"):
+        return common_pb2.Status(code=code, message=message)
+
+    def _grpc_status_for_error(self, exc: TradingServiceException) -> grpc.StatusCode:
+        if exc.error_code == "ORDERS_DISABLED":
+            return grpc.StatusCode.PERMISSION_DENIED
+        if exc.error_code == "SESSION_NOT_FOUND":
+            return grpc.StatusCode.NOT_FOUND
+        if exc.error_code == "ACCOUNT_PROFILE_NOT_ALLOWED":
+            return grpc.StatusCode.PERMISSION_DENIED
+        if exc.error_code == "XTTRADER_UNAVAILABLE":
+            return grpc.StatusCode.UNAVAILABLE
+        if exc.error_code == "TRADER_NOT_CONNECTED":
+            return grpc.StatusCode.FAILED_PRECONDITION
+        return grpc.StatusCode.INVALID_ARGUMENT
+
+    def _error_response(self, context, exc: TradingServiceException, response_type):
+        context.set_code(self._grpc_status_for_error(exc))
+        context.set_details(exc.message)
+        return response_type(status=self._status(400, exc.message))
