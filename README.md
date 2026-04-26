@@ -1,5 +1,7 @@
 # xtquant-proxy
 
+> **开发状态**: `v0.0.1` 迭代中 | 当前已支持 gRPC / REST / WebSocket、多环境 `mock / dev / prod` 和本地 `xtquant` 代理能力；后续将继续补充更多 xtquant 能力、真实联调体验和客户端示例
+
 <div align="center">
 
 基于 FastAPI、gRPC 和 WebSocket 的 xtquant / QMT 代理服务
@@ -9,23 +11,18 @@
 [![gRPC](https://img.shields.io/badge/gRPC-1.76+-orange.svg)](https://grpc.io/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-[快速开始](#快速开始) · [环境配置](#环境配置) · [运行模式](#运行模式) · [测试](#测试)
+[快速开始](#快速开始) | [核心特性](#核心特性) | [环境配置](#环境配置) | [运行模式](#运行模式) | [测试](#测试)
 
 </div>
 
-## 开发状态
+## 核心特性
 
-当前版本：`v0.0.1`
-
-已完成：
-- gRPC、REST、WebSocket 三类对外接口
-- `mock / dev / prod` 三种运行与测试模式
-- 基于本地 `xtquant` 源码的行情与交易适配
-
-后续计划：
-- 补齐更多 xtquant 数据与交易能力
-- 增强真实环境联调与排障能力
-- 补充更多客户端示例
+- 统一代理 `xtquant / QMT`，同时提供 gRPC、REST 和 WebSocket 三种接入方式
+- 提供 `mock / dev / prod` 三环境切换，便于本地开发、模拟账号联调和真实环境接入
+- 支持账户会话、资产、持仓、订单、成交、下单、撤单等交易能力
+- 支持历史 K 线、历史 tick、full tick、财务数据、合约详情、指数权重、板块列表和 L2 数据查询
+- 支持普通行情订阅与 whole quote 订阅，可通过 WebSocket 或 gRPC 流式消费
+- 提供完整的本地自动化测试基座，便于在真实 QMT 接入前完成大部分验证
 
 ## 快速开始
 
@@ -134,7 +131,7 @@ copy config.local.example.yml config.local.yml
 
 ```yaml
 xtquant:
-  qmt_userdata_path: "C:\\国金证券QMT交易端\\userdata"
+  qmt_userdata_path: "C:\\path\\to\\your\\QMT\\userdata"
   trading:
     enable_prod_orders: false
     accounts:
@@ -158,11 +155,10 @@ xtquant:
 - `qmt_userdata_path` 要填 QMT 的用户数据目录，不是安装根目录
 - MiniQMT 通常使用 `userdata_mini`
 - 券商 QMT / 投研端通常使用 `userdata`
-- 当前这类国金客户端目录应配置为 `C:\国金证券QMT交易端\userdata`
 - `dev` 只能使用 `simulated` 账号
 - `prod` 只能使用 `real` 账号
 - 未登记账号会在建会话时被拒绝
-- 如果你要让外部模块在 `prod` 下真实下单，需要显式开启 `xtquant.trading.enable_prod_orders: true`
+- 如果要让外部模块在 `prod` 下真实下单，需要显式开启 `xtquant.trading.enable_prod_orders: true`
 
 启动示例：
 
@@ -180,7 +176,7 @@ python run.py
 
 ### dev / prod 测试配置
 
-如果你要跑真实 xtquant 测试，再复制测试专用配置：
+如果要跑真实 xtquant 测试，再复制测试专用配置：
 
 ```cmd
 copy config.test.local.example.yml config.test.local.yml
