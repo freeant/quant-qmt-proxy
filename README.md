@@ -232,6 +232,8 @@ copy config.test.local.example.yml config.test.local.yml
 
 ## 接口概览
 
+完整请求/响应说明见 **[API 参考](docs/api-reference.md)**。启动 REST 后也可使用交互式文档：**Swagger UI** `/docs`、**ReDoc** `/redoc`。
+
 ### REST
 
 数据接口：
@@ -272,6 +274,11 @@ copy config.test.local.example.yml config.test.local.yml
 - `GET /health/ready` — `mock` 恒为 200；`dev/prod` 在 xtdata 未连接时返回 **503**
 - `GET /health/live`
 
+查询参数补充：
+
+- `GET /api/v1/data/instrument/{symbol}?complete=false`
+- `GET /api/v1/trading/sessions/{session_id}/orders?cancelable_only=false`
+
 ### gRPC
 
 数据服务：
@@ -303,11 +310,17 @@ copy config.test.local.example.yml config.test.local.yml
 - `CancelStockOrder`
 - `StreamTradingEvents`
 
+健康服务：
+
+- `Check`（`proto/health.proto`）
+
 ### WebSocket
 
 - `GET /ws/quote/{subscription_id}`
 
-鉴权：在配置了 `api_keys` 时，通过查询参数 `?token=<api_key>` 传递（与 REST/gRPC 的 `Authorization: Bearer` 不同，请注意客户端实现）。
+鉴权：在配置了 `api_keys` 时，REST/gRPC 使用 `Authorization: Bearer <api_key>`；WebSocket 使用查询参数 `?token=<api_key>`（与 REST 不同，请注意客户端实现）。
+
+订阅/会话在启用 Redis 时，响应可能额外包含 `redis_stream_key`、`redis_symbol_stream_keys`、`redis_trading_stream_key`，详见 [API 参考](docs/api-reference.md) 与 [Redis Stream 设计](docs/design-redis-stream-market-data.md)。
 
 ## 生产部署提示
 
@@ -372,6 +385,7 @@ quant-qmt-proxy/
 
 ## 设计文档
 
+- [API 参考（REST / gRPC / WebSocket）](docs/api-reference.md)
 - [行情 Redis Stream 广播（局域网异构消费者）](docs/design-redis-stream-market-data.md) — Phase 1/2/3 已实现
 
 启用方式（可选）：
