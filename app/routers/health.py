@@ -6,7 +6,8 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 
 from app.config import Settings, get_settings
-from app.dependencies import get_xtdata_gateway
+from app.dependencies import get_redis_stream_sink, get_xtdata_gateway
+from app.services.redis_stream_sink import RedisStreamSink
 from app.services.runtime_health import evaluate_runtime_readiness
 from app.services.xtdata_gateway import XtDataGateway
 from app.utils.helpers import format_response
@@ -34,10 +35,11 @@ async def health_check(settings: Settings = Depends(get_settings)):
 async def readiness_check(
     settings: Settings = Depends(get_settings),
     gateway: XtDataGateway = Depends(get_xtdata_gateway),
+    redis_sink: RedisStreamSink | None = Depends(get_redis_stream_sink),
 ):
-    """就绪检查：mock 始终就绪；dev/prod 要求 xtdata 已连接。"""
+    """就绪检查：mock 始终就绪；dev/prod 要求 xtdata 已连接；Redis 旁路单独报告。"""
 
-    ready, checks = evaluate_runtime_readiness(settings, gateway)
+    ready, checks = evaluate_runtime_readiness(settings, gateway, redis_sink)
     payload = format_response(
         data={
             "status": "ready" if ready else "not_ready",

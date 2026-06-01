@@ -2,7 +2,7 @@
 
 | 项目 | 内容 |
 |------|------|
-| 状态 | **Approved（评审通过）** |
+| 状态 | **Implemented（Phase 1）** |
 | 版本 | 0.2 |
 | 日期 | 2026-06-01 |
 | 关联服务 | quant-qmt-proxy / xtquant-proxy |
@@ -453,13 +453,13 @@ lag_ms = now_ms - envelope.event.event_time_ms
 
 ### Phase 1（MVP）— 评审锁定范围
 
-- [ ] `redis` 配置 + `RedisStreamSink`
-- [ ] `_fanout` 双写；`delete_subscription` → EXPIRE/DEL
-- [ ] 仅**持久** `quote` 订阅写 Redis（`mirror_ephemeral=false`）
-- [ ] REST 返回 `redis_stream_key`
-- [ ] `mirror_mock`；`enabled=false` 默认
-- [ ] `/health/ready` 中 `checks.redis`（策略 A，不拖垮 200）
-- [ ] 单元测试（fakeredis）+ README/本文档
+- [x] `redis` 配置 + `RedisStreamSink`
+- [x] `_fanout` 双写；`delete_subscription` → EXPIRE/DEL
+- [x] 仅**持久** `quote` 订阅写 Redis（`mirror_ephemeral=false`）
+- [x] REST 返回 `redis_stream_key`
+- [x] `mirror_mock`；`enabled=false` 默认
+- [x] `/health/ready` 中 `checks.redis`（策略 A，不拖垮 200）
+- [x] 单元测试（fakeredis）+ README/本文档
 
 ### Phase 2
 

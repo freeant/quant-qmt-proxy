@@ -10,6 +10,7 @@ from typing import Any, AsyncIterator, Callable, Iterator
 
 from app.config import Settings, XTQuantMode
 from app.services.contracts import QuoteSubscriptionSpec, WholeQuoteSubscriptionSpec
+from app.services.redis_stream_sink import RedisStreamSink
 from app.services.xtdata_gateway import XTQUANT_DATA_AVAILABLE, XtDataGateway, to_epoch_ms
 from app.utils.exceptions import DataServiceException
 from app.utils.logger import logger
@@ -39,9 +40,15 @@ class SubscriptionRecord:
 
 
 class XtDataSubscriptionHub:
-    def __init__(self, settings: Settings, gateway: XtDataGateway):
+    def __init__(
+        self,
+        settings: Settings,
+        gateway: XtDataGateway,
+        redis_sink: RedisStreamSink | None = None,
+    ):
         self.settings = settings
         self.gateway = gateway
+        self.redis_sink = redis_sink
         self._lock = threading.RLock()
         self._runner_lock = threading.Lock()
         self._subscriptions: dict[str, SubscriptionRecord] = {}
@@ -118,7 +125,10 @@ class XtDataSubscriptionHub:
         try:
             if self.settings.xtquant.mode == XTQuantMode.MOCK:
                 while record.active and (stop_checker is None or stop_checker()):
-                    yield self._mock_event(record)
+                    event = self._mock_event(record)
+                    if self._should_publish_redis_in_stream_loop(record):
+                        self._publish_redis(record, event)
+                    yield event
                     time.sleep(1.0)
                 return
 
@@ -136,7 +146,10 @@ class XtDataSubscriptionHub:
         try:
             if self.settings.xtquant.mode == XTQuantMode.MOCK:
                 while record.active:
-                    yield self._mock_event(record)
+                    event = self._mock_event(record)
+                    if self._should_publish_redis_in_stream_loop(record):
+                        self._publish_redis(record, event)
+                    yield event
                     await asyncio.sleep(1.0)
                 return
 
@@ -156,6 +169,8 @@ class XtDataSubscriptionHub:
             return False
         record.active = False
         self._unsubscribe_native(record)
+        if self.redis_sink is not None:
+            self.redis_sink.on_subscription_deleted(record)
         logger.info(f"deleted subscription: id={subscription_id}, type={record.subscription_type}")
         return True
 
@@ -175,6 +190,8 @@ class XtDataSubscriptionHub:
             subscription_ids = list(self._subscriptions.keys())
         for subscription_id in subscription_ids:
             self.delete_subscription(subscription_id)
+        if self.redis_sink is not None:
+            self.redis_sink.close()
 
     def _create_quote_subscription(self, spec: QuoteSubscriptionSpec, persistent: bool) -> str:
         if not spec.symbols:
@@ -211,6 +228,7 @@ class XtDataSubscriptionHub:
         logger.info(
             f"created quote subscription: id={subscription_id}, symbols={record.symbols}, period={record.period}, count={record.count}, persistent={persistent}"
         )
+        self._start_mock_redis_feeder_if_needed(record)
         return subscription_id
 
     def _create_whole_quote_subscription(self, spec: WholeQuoteSubscriptionSpec, persistent: bool) -> str:
@@ -240,7 +258,28 @@ class XtDataSubscriptionHub:
         logger.info(
             f"created whole-quote subscription: id={subscription_id}, markets={record.markets}, persistent={persistent}"
         )
+        self._start_mock_redis_feeder_if_needed(record)
         return subscription_id
+
+    def _start_mock_redis_feeder_if_needed(self, record: SubscriptionRecord) -> None:
+        if self.settings.xtquant.mode != XTQuantMode.MOCK:
+            return
+        if not record.persistent:
+            return
+        if self.redis_sink is None or not self.redis_sink.should_mirror(record):
+            return
+
+        def worker() -> None:
+            while record.active:
+                event = self._mock_event(record)
+                self._publish_redis(record, event)
+                time.sleep(1.0)
+
+        threading.Thread(
+            target=worker,
+            daemon=True,
+            name=f"mock-redis-feeder-{record.subscription_id[:8]}",
+        ).start()
 
     def _ensure_subscription_capacity_locked(self) -> None:
         limit = self.settings.xtquant.data.max_subscriptions
@@ -364,6 +403,23 @@ class XtDataSubscriptionHub:
                         f"subscription queue overflow: subscription_id={subscription_id}, consumer_id={consumer_id}, dropped_total={dropped_total}"
                     )
 
+        self._publish_redis(record, event)
+
+    def _publish_redis(self, record: SubscriptionRecord, event: dict[str, Any]) -> None:
+        if self.redis_sink is not None:
+            self.redis_sink.publish(record, event)
+
+    def _should_publish_redis_in_stream_loop(self, record: SubscriptionRecord) -> bool:
+        if not record.persistent:
+            return True
+        if (
+            self.settings.xtquant.mode == XTQuantMode.MOCK
+            and self.redis_sink is not None
+            and self.redis_sink.should_mirror(record)
+        ):
+            return False
+        return True
+
     def _normalize_payload(self, period: str, payload: dict[str, Any]) -> list[dict[str, Any]]:
         if not isinstance(payload, dict):
             return []
@@ -417,7 +473,7 @@ class XtDataSubscriptionHub:
         }
 
     def _serialize_record(self, record: SubscriptionRecord) -> dict[str, Any]:
-        return {
+        payload = {
             "subscription_id": record.subscription_id,
             "subscription_type": record.subscription_type,
             "persistent": record.persistent,
@@ -432,6 +488,12 @@ class XtDataSubscriptionHub:
             "consumer_count": len(record.consumer_queues),
             "active": record.active,
         }
+        if self.redis_sink is not None and self.redis_sink.should_mirror(record):
+            payload["redis_stream_key"] = self.redis_sink.build_stream_key(
+                record.subscription_id,
+                record.subscription_type,
+            )
+        return payload
 
     def _get_record(self, subscription_id: str) -> SubscriptionRecord:
         record = self._subscriptions.get(subscription_id)

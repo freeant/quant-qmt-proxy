@@ -101,6 +101,22 @@ class TestingConfig(BaseModel):
     prod_unlock_token: str | None = None
 
 
+class RedisConfig(BaseModel):
+    enabled: bool = False
+    url: str = "redis://127.0.0.1:6379/0"
+    stream_prefix: str = "qmt"
+    maxlen: int = 2000
+    connect_timeout_seconds: float = 2.0
+    write_timeout_ms: int = 50
+    fail_open: bool = True
+    delete_stream_on_unsubscribe: bool = False
+    grace_ttl_seconds: int = 60
+    mirror_mock: bool = True
+    mirror_ephemeral: bool = False
+    mirror_whole_quote: bool = False
+    whole_quote_maxlen: int = 5000
+
+
 class Settings(BaseModel):
     app: AppConfig = Field(default_factory=AppConfig)
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
@@ -109,6 +125,7 @@ class Settings(BaseModel):
     cors: CORSConfig = Field(default_factory=CORSConfig)
     uvicorn: UvicornConfig = Field(default_factory=UvicornConfig)
     testing: TestingConfig = Field(default_factory=TestingConfig)
+    redis: RedisConfig = Field(default_factory=RedisConfig)
     grpc_enabled: bool = True
     grpc_host: str = "0.0.0.0"
     grpc_port: int = 50051
@@ -207,7 +224,10 @@ def load_config(
     api_keys_override = os.getenv("APP_API_KEYS")
     debug_override = os.getenv("APP_DEBUG")
     enable_prod_orders_override = os.getenv("APP_ENABLE_PROD_ORDERS")
+    redis_url_override = os.getenv("REDIS_URL")
+    redis_enabled_override = os.getenv("REDIS_ENABLED")
     xtquant_config = config_data.get("xtquant", {})
+    redis_config = config_data.get("redis", {})
     xtquant_data_config = xtquant_config.get("data", {})
     xtquant_trading_config = xtquant_config.get("trading", {})
 
@@ -308,6 +328,25 @@ def load_config(
             "enable_prod_readonly_tests": testing_config.get("enable_prod_readonly_tests", False),
             "qmt_userdata_path": testing_config.get("qmt_userdata_path"),
             "prod_unlock_token": testing_config.get("prod_unlock_token"),
+        },
+        "redis": {
+            "enabled": (
+                _env_flag("REDIS_ENABLED", False)
+                if redis_enabled_override is not None
+                else redis_config.get("enabled", False)
+            ),
+            "url": redis_url_override or redis_config.get("url", "redis://127.0.0.1:6379/0"),
+            "stream_prefix": redis_config.get("stream_prefix", "qmt"),
+            "maxlen": redis_config.get("maxlen", 2000),
+            "connect_timeout_seconds": float(redis_config.get("connect_timeout_seconds", 2)),
+            "write_timeout_ms": int(redis_config.get("write_timeout_ms", 50)),
+            "fail_open": redis_config.get("fail_open", True),
+            "delete_stream_on_unsubscribe": redis_config.get("delete_stream_on_unsubscribe", False),
+            "grace_ttl_seconds": int(redis_config.get("grace_ttl_seconds", 60)),
+            "mirror_mock": redis_config.get("mirror_mock", True),
+            "mirror_ephemeral": redis_config.get("mirror_ephemeral", False),
+            "mirror_whole_quote": redis_config.get("mirror_whole_quote", False),
+            "whole_quote_maxlen": redis_config.get("whole_quote_maxlen", 5000),
         },
         "grpc_enabled": config_data.get("grpc", {}).get("enabled", True),
         "grpc_host": grpc_env_host or config_data.get("grpc", {}).get("host", "0.0.0.0"),

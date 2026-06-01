@@ -11,6 +11,7 @@ from app.config import Settings, get_settings
 from app.services.market_data_service import MarketDataService
 from app.services.reference_data_service import ReferenceDataService
 from app.services.trading_event_hub import TradingEventHub
+from app.services.redis_stream_sink import RedisStreamSink
 from app.services.trading_session_manager import TradingSessionManager
 from app.services.ui_subscription_service import UiSubscriptionService
 from app.services.xtdata_gateway import XtDataGateway
@@ -27,6 +28,16 @@ _reference_data_service: ReferenceDataService | None = None
 _ui_subscription_service: UiSubscriptionService | None = None
 _trading_event_hub: TradingEventHub | None = None
 _trading_session_manager: TradingSessionManager | None = None
+_redis_stream_sink: RedisStreamSink | None = None
+
+
+def get_redis_stream_sink(settings: Settings = Depends(get_settings)) -> RedisStreamSink | None:
+    global _redis_stream_sink
+    if not settings.redis.enabled:
+        return None
+    if _redis_stream_sink is None:
+        _redis_stream_sink = RedisStreamSink(settings)
+    return _redis_stream_sink
 
 
 def get_xtdata_gateway(settings: Settings = Depends(get_settings)) -> XtDataGateway:
@@ -39,7 +50,11 @@ def get_xtdata_gateway(settings: Settings = Depends(get_settings)) -> XtDataGate
 def get_subscription_hub(settings: Settings = Depends(get_settings)) -> XtDataSubscriptionHub:
     global _subscription_hub
     if _subscription_hub is None:
-        _subscription_hub = XtDataSubscriptionHub(settings, get_xtdata_gateway(settings))
+        _subscription_hub = XtDataSubscriptionHub(
+            settings,
+            get_xtdata_gateway(settings),
+            get_redis_stream_sink(settings),
+        )
     return _subscription_hub
 
 
@@ -120,6 +135,7 @@ def reset_services() -> None:
     global _ui_subscription_service
     global _trading_event_hub
     global _trading_session_manager
+    global _redis_stream_sink
 
     if _subscription_hub is not None:
         try:
@@ -139,3 +155,9 @@ def reset_services() -> None:
     _ui_subscription_service = None
     _trading_event_hub = None
     _trading_session_manager = None
+    if _redis_stream_sink is not None:
+        try:
+            _redis_stream_sink.close()
+        except Exception:
+            pass
+    _redis_stream_sink = None

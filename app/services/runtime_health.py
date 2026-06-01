@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from app.config import Settings, XTQuantMode
+from app.services.redis_stream_sink import RedisStreamSink
 from app.services.xtdata_gateway import XtDataGateway
 
 
@@ -17,7 +18,36 @@ def evaluate_xtdata_readiness(settings: Settings, gateway: XtDataGateway) -> dic
     return snapshot
 
 
-def evaluate_runtime_readiness(settings: Settings, gateway: XtDataGateway) -> tuple[bool, dict[str, Any]]:
+def evaluate_redis_readiness(settings: Settings, redis_sink: RedisStreamSink | None) -> dict[str, Any]:
+    if not settings.redis.enabled:
+        return {"status": "disabled", "ready": True, "required": False}
+
+    if redis_sink is None:
+        return {
+            "status": "unavailable",
+            "ready": False,
+            "required": True,
+            "reason": "redis sink is not initialized",
+        }
+
+    if redis_sink.ping():
+        return {"status": "ok", "ready": True, "required": True}
+
+    return {
+        "status": "degraded",
+        "ready": False,
+        "required": True,
+        "reason": "redis ping failed",
+    }
+
+
+def evaluate_runtime_readiness(
+    settings: Settings,
+    gateway: XtDataGateway,
+    redis_sink: RedisStreamSink | None = None,
+) -> tuple[bool, dict[str, Any]]:
     xtdata = evaluate_xtdata_readiness(settings, gateway)
     ready = bool(xtdata.get("ready"))
-    return ready, {"xtdata": xtdata}
+    checks: dict[str, Any] = {"xtdata": xtdata}
+    checks["redis"] = evaluate_redis_readiness(settings, redis_sink)
+    return ready, checks

@@ -21,6 +21,7 @@ dependencies = [
     "protobuf (>=6.33.6,<7.0.0)",
     "grpcio-reflection (>=1.80.0,<2.0.0)",
     "xtquant (>=250516.1.1,<250517.0.0)",
+    "redis (>=5.0.0,<6.0.0)",
 ]
 
 
@@ -62,4 +63,5 @@ indent-style = "space"
 dev = [
     "pytest (>=9.0.2,<10.0.0)",
     "pytest-asyncio (>=1.2.0,<2.0.0)",
+    "fakeredis (>=2.26.0,<3.0.0)",
 ]

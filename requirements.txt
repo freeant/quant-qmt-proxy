@@ -17,3 +17,6 @@ grpcio-reflection==1.80.0
 
 # QMT SDK
 xtquant==250516.1.1
+
+# Redis Stream (optional market data bus)
+redis>=5.0.0,<6.0.0

@@ -91,3 +91,18 @@ modes:
       diagnose: false
 
 security: {}
+
+redis:
+  enabled: false
+  url: "redis://127.0.0.1:6379/0"
+  stream_prefix: "qmt"
+  maxlen: 2000
+  connect_timeout_seconds: 2
+  write_timeout_ms: 50
+  fail_open: true
+  delete_stream_on_unsubscribe: false
+  grace_ttl_seconds: 60
+  mirror_mock: true
+  mirror_ephemeral: false
+  mirror_whole_quote: false
+  whole_quote_maxlen: 5000

@@ -372,7 +372,17 @@ quant-qmt-proxy/
 
 ## 设计文档
 
-- [行情 Redis Stream 广播（局域网异构消费者）](docs/design-redis-stream-market-data.md) — 设计说明 v0.2（评审通过，待实现）
+- [行情 Redis Stream 广播（局域网异构消费者）](docs/design-redis-stream-market-data.md) — 设计说明 v0.2（Phase 1 已实现）
+
+启用方式（可选）：
+
+```cmd
+set REDIS_ENABLED=true
+set REDIS_URL=redis://127.0.0.1:6379/0
+python run.py
+```
+
+创建订阅后，响应中的 `redis_stream_key` 可供 Go 等通过 `XREAD` 广播消费。
 
 ## 文档约定
 
