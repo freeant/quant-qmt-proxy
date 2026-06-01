@@ -107,7 +107,10 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 
 @app.exception_handler(Exception)
 async def general_exception_handler(request: Request, exc: Exception):
-    return JSONResponse(status_code=500, content=format_response(message=str(exc), success=False, code=500))
+    settings = get_settings()
+    message = str(exc) if settings.app.debug else "Internal server error"
+    logger.exception(f"unhandled exception: {exc}")
+    return JSONResponse(status_code=500, content=format_response(message=message, success=False, code=500))
 
 
 app.include_router(health.router)

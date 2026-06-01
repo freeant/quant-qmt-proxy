@@ -117,12 +117,12 @@ class XtDataSubscriptionHub:
         record = self._get_record(subscription_id)
         try:
             if self.settings.xtquant.mode == XTQuantMode.MOCK:
-                while stop_checker is None or stop_checker():
+                while record.active and (stop_checker is None or stop_checker()):
                     yield self._mock_event(record)
                     time.sleep(1.0)
                 return
 
-            while stop_checker is None or stop_checker():
+            while record.active and (stop_checker is None or stop_checker()):
                 try:
                     yield consumer_queue.get(timeout=1.0)
                 except queue.Empty:

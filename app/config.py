@@ -80,16 +80,7 @@ class XTQuantConfig(BaseModel):
 
 
 class SecurityConfig(BaseModel):
-    secret_key: str = "your-secret-key-change-in-production"
     api_keys: list[str] = Field(default_factory=list)
-
-
-class DatabaseConfig(BaseModel):
-    url: str | None = None
-
-
-class RedisConfig(BaseModel):
-    url: str | None = None
 
 
 class CORSConfig(BaseModel):
@@ -115,15 +106,13 @@ class Settings(BaseModel):
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
     xtquant: XTQuantConfig = Field(default_factory=XTQuantConfig)
     security: SecurityConfig = Field(default_factory=SecurityConfig)
-    database: DatabaseConfig = Field(default_factory=DatabaseConfig)
-    redis: RedisConfig = Field(default_factory=RedisConfig)
     cors: CORSConfig = Field(default_factory=CORSConfig)
     uvicorn: UvicornConfig = Field(default_factory=UvicornConfig)
     testing: TestingConfig = Field(default_factory=TestingConfig)
     grpc_enabled: bool = True
     grpc_host: str = "0.0.0.0"
     grpc_port: int = 50051
-    grpc_max_workers: int = 10
+    grpc_max_workers: int = 20
     grpc_max_message_length: int = 50 * 1024 * 1024
     app_servers: str = "all"
 
@@ -161,10 +150,10 @@ def _load_yaml_file(path: str | os.PathLike[str] | None) -> dict[str, Any]:
 
 
 def _normalize_mode(mode: str | None) -> str:
-    normalized = (mode or "dev").strip().lower()
+    normalized = (mode or "mock").strip().lower()
     if normalized not in {"mock", "dev", "prod"}:
         if mode is None or not str(mode).strip():
-            return "dev"
+            return "mock"
         raise ConfigurationException(
             f"invalid app mode: {mode}",
             "INVALID_APP_MODE",
@@ -202,7 +191,7 @@ def load_config(
             "CONFIG_FILE_MISSING",
         )
 
-    resolved_mode = _normalize_mode(app_mode or os.getenv("APP_MODE", "dev"))
+    resolved_mode = _normalize_mode(app_mode or os.getenv("APP_MODE", "mock"))
     mode_config = config_data.get("modes", {}).get(resolved_mode, {})
     if not mode_config:
         raise ConfigurationException(
@@ -300,14 +289,7 @@ def load_config(
             },
         },
         "security": {
-            "secret_key": config_data.get("security", {}).get("secret_key", "change-me"),
             "api_keys": resolved_api_keys,
-        },
-        "database": {
-            "url": mode_config.get("database", {}).get("url"),
-        },
-        "redis": {
-            "url": mode_config.get("redis", {}).get("url"),
         },
         "cors": mode_config.get(
             "cors",

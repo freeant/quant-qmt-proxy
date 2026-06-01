@@ -8,7 +8,7 @@ from app.config import get_settings, reset_settings
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="xtquant-proxy bootstrap")
-    parser.add_argument("--mode", choices=["mock", "dev", "prod"], default="dev")
+    parser.add_argument("--mode", choices=["mock", "dev", "prod"], default="mock")
     parser.add_argument("--servers", choices=["all", "grpc", "rest"], default="all")
     parser.add_argument("--host", default=None, help="REST host override")
     parser.add_argument("--port", type=int, default=None, help="REST port override")
@@ -24,7 +24,10 @@ def main() -> None:
 
     os.environ["APP_MODE"] = args.mode
     os.environ["APP_SERVERS"] = args.servers
-    os.environ["APP_DEBUG"] = "true" if args.reload else "false"
+    if args.reload:
+        os.environ["APP_DEBUG"] = "true"
+    else:
+        os.environ.pop("APP_DEBUG", None)
     if args.host:
         os.environ["APP_HOST"] = args.host
     if args.port is not None:

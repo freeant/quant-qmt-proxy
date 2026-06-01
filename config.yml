@@ -20,7 +20,8 @@ grpc:
   enabled: true
   host: "0.0.0.0"
   port: 50051
-  max_workers: 10
+  # 每个 gRPC 流式 RPC 会占用一个 worker 直到连接结束；并发流较多时可适当调大
+  max_workers: 20
   max_message_length: 52428800
 
 xtquant:
@@ -56,12 +57,9 @@ modes:
     api_keys:
       - "mock-api-key-001"
       - "mock-api-key-002"
-    database:
-      url: "sqlite:///./app_mock.db"
-    redis:
-      url: "redis://localhost:6379/0"
     cors:
       allow_origins: ["*"]
+      allow_credentials: false
 
   dev:
     debug: true
@@ -72,12 +70,9 @@ modes:
     api_keys:
       - "dev-api-key-001"
       - "dev-api-key-002"
-    database:
-      url: "sqlite:///./app_dev.db"
-    redis:
-      url: "redis://localhost:6379/1"
     cors:
       allow_origins: ["*"]
+      allow_credentials: false
 
   prod:
     debug: false
@@ -88,15 +83,11 @@ modes:
     api_keys:
       - "prod-api-key-001"
       - "prod-api-key-002"
-    database:
-      url: "postgresql://user:password@localhost:5432/xtquant_proxy"
-    redis:
-      url: "redis://localhost:6379/0"
     cors:
       allow_origins: ["https://yourdomain.com"]
+      allow_credentials: true
     logging:
       console_output: false
       diagnose: false
 
-security:
-  secret_key: "change-this-to-secure-key-in-production"
+security: {}

@@ -1,6 +1,6 @@
 [project]
 name = "quant-qmt-proxy"
-version = "0.1.0"
+version = "1.0.0"
 description = ""
 authors = [{ name = "zhzhl0", email = "zhzhl0@163.com" }]
 readme = "README.md"
@@ -49,7 +49,7 @@ ignore = ["E501", "D", "RUF001", "RUF002", "RUF003", "RUF012", "F405", "F403", "
 
 # isort 也作为 lint 的子配置（或独立但推荐放 lint 下）
 [tool.ruff.lint.isort]
-known-first-party = ["src/app", "tests"]
+known-first-party = ["app", "tests"]
 combine-as-imports = true            # 合并导入语句
 split-on-trailing-comma = false      # 不拆分尾随逗号
 lines-between-types = 1              # 类型之间空一行

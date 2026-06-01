@@ -191,6 +191,20 @@ class XtDataGateway:
             if thread.is_alive():
                 logger.warning("xtdata connect attempt timed out; waiting for current attempt to finish")
 
+    def get_readiness_snapshot(self) -> dict[str, Any]:
+        if self._is_mock_mode():
+            return {"status": "mock", "ready": True, "reason": None}
+        if not XTQUANT_DATA_AVAILABLE:
+            return {
+                "status": "unavailable",
+                "ready": False,
+                "reason": "xtquant.xtdata is unavailable",
+            }
+        if self._initialized:
+            return {"status": "connected", "ready": True, "reason": None}
+        reason = self._last_connect_error or "xtdata is not connected"
+        return {"status": "disconnected", "ready": False, "reason": reason}
+
     def ensure_ready(self) -> None:
         if self._is_mock_mode():
             return

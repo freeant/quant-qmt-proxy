@@ -58,17 +58,27 @@ pip install pytest pytest-asyncio
 
 ### 3. 启动本地 mock
 
+未设置 `APP_MODE` 时，服务**默认以 `mock` 模式**启动（无需 QMT）。可直接：
+
+```cmd
+python run.py
+```
+
+或显式指定：
+
 ```cmd
 set APP_MODE=mock
 set APP_SERVERS=all
 python run.py
 ```
 
-也可以使用启动脚本：
+也可以使用启动脚本（默认同样是 `mock`）：
 
 ```cmd
-python start.py --mode mock --servers all
+python start.py --servers all
 ```
+
+说明：`start.py` 仅在传入 `--reload` 时设置 `APP_DEBUG=true`；否则沿用 `config.yml` 中对应模式的 `debug` 配置。
 
 ### 4. 访问接口
 
@@ -79,9 +89,13 @@ python start.py --mode mock --servers all
 
 ### 5. 运行本地 mock 测试
 
+在已激活的 venv 中：
+
 ```cmd
-python -m pytest tests\unit -q --xt-mode=mock
+.venv\Scripts\python.exe -m pytest tests\unit -q --xt-mode=mock
 ```
+
+仓库在 push / PR 时会通过 GitHub Actions（`.github/workflows/tests.yml`）自动执行同样的 mock 测试。
 
 ## 环境配置
 
@@ -255,7 +269,7 @@ copy config.test.local.example.yml config.test.local.yml
 
 - `GET /`
 - `GET /health/`
-- `GET /health/ready`
+- `GET /health/ready` — `mock` 恒为 200；`dev/prod` 在 xtdata 未连接时返回 **503**
 - `GET /health/live`
 
 ### gRPC
@@ -293,12 +307,21 @@ copy config.test.local.example.yml config.test.local.yml
 
 - `GET /ws/quote/{subscription_id}`
 
+鉴权：在配置了 `api_keys` 时，通过查询参数 `?token=<api_key>` 传递（与 REST/gRPC 的 `Authorization: Bearer` 不同，请注意客户端实现）。
+
+## 生产部署提示
+
+- **gRPC**：默认使用明文端口（`add_insecure_port`）。公网或跨机房请在前置网关/服务网格上启用 TLS，或仅在内网暴露。
+- **gRPC 流式行情**：每个 `StreamQuote` / `StreamWholeQuote` 会占用线程池中的一个 worker，直到客户端断开。并发流较多时请增大 `config.yml` 中的 `grpc.max_workers`（默认 `20`）。
+- **CORS**：`mock/dev` 使用 `allow_origins: ["*"]` 且 `allow_credentials: false`（符合浏览器规范）；`prod` 请配置明确域名。
+- **错误响应**：`app.debug=false` 时，未捕获异常统一返回 `Internal server error`，详细信息仅写入日志。
+
 ## 测试
 
 默认测试只跑本地 `mock`：
 
 ```cmd
-python -m pytest tests\unit -q --xt-mode=mock
+.venv\Scripts\python.exe -m pytest tests\unit -q --xt-mode=mock
 ```
 
 按模块运行：

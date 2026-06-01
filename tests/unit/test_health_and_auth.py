@@ -22,6 +22,72 @@ def test_rest_health_endpoints(rest_test_context: RestTestContext, path: str):
     assert payload["success"] is True
 
 
+def test_readiness_includes_xtdata_checks(rest_test_context: RestTestContext):
+    response = rest_test_context.client.get("/health/ready")
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    assert payload["data"]["status"] == "ready"
+    assert payload["data"]["checks"]["xtdata"]["status"] == "mock"
+
+
+def test_readiness_returns_503_when_xtdata_not_connected():
+    import importlib
+
+    import app.config as config_module
+    import app.main as main_module
+    from app.config import Settings, reset_settings
+    from app.dependencies import get_xtdata_gateway, reset_services
+    from fastapi.testclient import TestClient
+
+    class DisconnectedGateway:
+        def get_readiness_snapshot(self) -> dict[str, str | bool | None]:
+            return {"status": "disconnected", "ready": False, "reason": "not connected"}
+
+    reset_services()
+    reset_settings()
+    config_module._settings_instance = Settings(
+        app={"debug": True},
+        xtquant={"mode": "dev", "data": {}},
+        security={"api_keys": []},
+    )
+    reloaded = importlib.reload(main_module)
+    reloaded.app.dependency_overrides[get_xtdata_gateway] = lambda: DisconnectedGateway()
+    client = TestClient(reloaded.app)
+
+    try:
+        response = client.get("/health/ready")
+
+        assert response.status_code == 503, response.text
+        payload = response.json()
+        assert payload["success"] is False
+        assert payload["data"]["status"] == "not_ready"
+        assert payload["data"]["checks"]["xtdata"]["ready"] is False
+    finally:
+        reloaded.app.dependency_overrides.clear()
+
+
+@pytest.mark.asyncio
+async def test_general_exception_handler_masks_details_when_debug_disabled(monkeypatch):
+    from starlette.requests import Request
+
+    import app.main as main_module
+    from app.config import Settings
+
+    monkeypatch.setattr(
+        main_module,
+        "get_settings",
+        lambda: Settings(app={"debug": False}),
+    )
+    request = Request({"type": "http", "method": "GET", "path": "/boom", "headers": []})
+
+    response = await main_module.general_exception_handler(request, RuntimeError("secret-detail"))
+
+    assert response.status_code == 500
+    body = response.body.decode()
+    assert "secret-detail" not in body
+    assert "Internal server error" in body
+
+
 @pytest.mark.parametrize(
     ("method", "path", "json_body"),
     [

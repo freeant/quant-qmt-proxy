@@ -7,7 +7,7 @@ from typing import Optional
 from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from app.config import Settings, XTQuantMode, get_settings
+from app.config import Settings, get_settings
 from app.services.market_data_service import MarketDataService
 from app.services.reference_data_service import ReferenceDataService
 from app.services.trading_event_hub import TradingEventHub
@@ -110,20 +110,6 @@ async def verify_api_key(
         logger.warning("API key verification failed: invalid bearer token")
         raise AuthenticationException("无效的 API 密钥")
     return api_key
-
-
-def is_real_trading_allowed(settings: Settings = Depends(get_settings)) -> bool:
-    if settings.xtquant.mode == XTQuantMode.DEV:
-        return any(
-            profile.enabled and profile.account_kind.value == "simulated" and XTQuantMode.DEV in profile.allowed_modes
-            for profile in settings.xtquant.trading.accounts
-        )
-    if settings.xtquant.mode == XTQuantMode.PROD:
-        return any(
-            profile.enabled and profile.account_kind.value == "real" and XTQuantMode.PROD in profile.allowed_modes
-            for profile in settings.xtquant.trading.accounts
-        ) and settings.xtquant.trading.enable_prod_orders
-    return settings.xtquant.mode == XTQuantMode.MOCK
 
 
 def reset_services() -> None:

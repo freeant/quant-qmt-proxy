@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import pytest
@@ -240,6 +241,49 @@ def test_load_config_fails_fast_when_app_servers_is_invalid(tmp_path: Path, monk
         load_config(str(config_file), app_mode="dev", local_config_file=None)
 
     assert exc.value.error_code == "INVALID_APP_SERVERS"
+
+
+def test_load_config_defaults_to_mock_without_app_mode(monkeypatch):
+    monkeypatch.delenv("APP_MODE", raising=False)
+    settings = load_config("config.yml", local_config_file=None)
+    assert settings.xtquant.mode == XTQuantMode.MOCK
+
+
+def test_load_config_uses_mode_debug_when_app_debug_unset(monkeypatch):
+    monkeypatch.delenv("APP_DEBUG", raising=False)
+    settings = load_config("config.yml", app_mode="mock", local_config_file=None)
+    assert settings.app.debug is True
+
+
+def test_load_config_honors_app_debug_override(monkeypatch):
+    monkeypatch.setenv("APP_DEBUG", "false")
+    settings = load_config("config.yml", app_mode="mock", local_config_file=None)
+    assert settings.app.debug is False
+
+
+def test_start_py_does_not_force_app_debug_without_reload(monkeypatch):
+    import run
+    import start
+
+    monkeypatch.delenv("APP_DEBUG", raising=False)
+    monkeypatch.setattr(
+        start.argparse.ArgumentParser,
+        "parse_args",
+        lambda self: start.argparse.Namespace(
+            mode="mock",
+            servers="all",
+            host=None,
+            port=None,
+            grpc_host=None,
+            grpc_port=None,
+            reload=False,
+        ),
+    )
+    monkeypatch.setattr(run, "main", lambda: None)
+
+    start.main()
+
+    assert os.getenv("APP_DEBUG") is None
 
 
 def test_configure_logging_is_idempotent(tmp_path: Path):
