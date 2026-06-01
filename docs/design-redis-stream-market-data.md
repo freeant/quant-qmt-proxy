@@ -2,7 +2,7 @@
 
 | 项目 | 内容 |
 |------|------|
-| 状态 | **Implemented（Phase 1）** |
+| 状态 | **Implemented（Phase 1 + Phase 2）** |
 | 版本 | 0.2 |
 | 日期 | 2026-06-01 |
 | 关联服务 | quant-qmt-proxy / xtquant-proxy |
@@ -463,10 +463,10 @@ lag_ms = now_ms - envelope.event.event_time_ms
 
 ### Phase 2
 
-- [ ] `mirror_whole_quote`
-- [ ] `subscription_ready` 控制消息（可选）
-- [ ] 熔断与指标导出
-- [ ] `mirror_ephemeral` 可配置开启
+- [x] `mirror_whole_quote`
+- [x] `subscription_ready` 控制消息（可选）
+- [x] 熔断与指标导出
+- [x] `mirror_ephemeral` 可配置开启
 
 ### Phase 3（按需）
 
@@ -573,3 +573,4 @@ func main() {
 |------|------|------|
 | 0.1 | 2026-06-01 | 初稿 |
 | 0.2 | 2026-06-01 | 评审通过：闭合开放问题；`mirror_ephemeral`；ready 策略 A；`redis_stream_key` 进 Phase 1；`grace_ttl` 默认 60s；修正载荷表述；多标的/gRPC/跨机/消费 lag 说明 |
+| 0.3 | 2026-06-02 | Phase 2：`mirror_whole_quote`、`mirror_ephemeral`、`subscription_ready`、熔断与 `checks.redis.metrics` |

@@ -30,15 +30,20 @@ def evaluate_redis_readiness(settings: Settings, redis_sink: RedisStreamSink | N
             "reason": "redis sink is not initialized",
         }
 
+    stats = redis_sink.get_stats()
     if redis_sink.ping():
-        return {"status": "ok", "ready": True, "required": True}
+        return {"status": "ok", "ready": True, "required": True, "metrics": stats}
 
-    return {
+    payload = {
         "status": "degraded",
         "ready": False,
         "required": True,
         "reason": "redis ping failed",
+        "metrics": stats,
     }
+    if stats.get("circuit_open"):
+        payload["reason"] = "redis circuit breaker is open"
+    return payload
 
 
 def evaluate_runtime_readiness(

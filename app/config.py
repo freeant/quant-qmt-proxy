@@ -115,6 +115,10 @@ class RedisConfig(BaseModel):
     mirror_ephemeral: bool = False
     mirror_whole_quote: bool = False
     whole_quote_maxlen: int = 5000
+    publish_subscription_ready: bool = True
+    circuit_breaker_enabled: bool = True
+    circuit_breaker_failure_threshold: int = 10
+    circuit_breaker_cooldown_seconds: float = 30.0
 
 
 class Settings(BaseModel):
@@ -347,6 +351,12 @@ def load_config(
             "mirror_ephemeral": redis_config.get("mirror_ephemeral", False),
             "mirror_whole_quote": redis_config.get("mirror_whole_quote", False),
             "whole_quote_maxlen": redis_config.get("whole_quote_maxlen", 5000),
+            "publish_subscription_ready": redis_config.get("publish_subscription_ready", True),
+            "circuit_breaker_enabled": redis_config.get("circuit_breaker_enabled", True),
+            "circuit_breaker_failure_threshold": int(redis_config.get("circuit_breaker_failure_threshold", 10)),
+            "circuit_breaker_cooldown_seconds": float(
+                redis_config.get("circuit_breaker_cooldown_seconds", 30)
+            ),
         },
         "grpc_enabled": config_data.get("grpc", {}).get("enabled", True),
         "grpc_host": grpc_env_host or config_data.get("grpc", {}).get("host", "0.0.0.0"),

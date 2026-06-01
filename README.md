@@ -372,7 +372,7 @@ quant-qmt-proxy/
 
 ## 设计文档
 
-- [行情 Redis Stream 广播（局域网异构消费者）](docs/design-redis-stream-market-data.md) — 设计说明 v0.2（Phase 1 已实现）
+- [行情 Redis Stream 广播（局域网异构消费者）](docs/design-redis-stream-market-data.md) — Phase 1/2 已实现
 
 启用方式（可选）：
 
@@ -382,7 +382,19 @@ set REDIS_URL=redis://127.0.0.1:6379/0
 python run.py
 ```
 
-创建订阅后，响应中的 `redis_stream_key` 可供 Go 等通过 `XREAD` 广播消费。
+创建订阅后，响应中的 `redis_stream_key` 可供 Go 等通过 `XREAD` 广播消费。Stream 首条可为 `subscription_ready` 控制消息（`redis.publish_subscription_ready=true`）。
+
+Phase 2 配置示例：
+
+```yaml
+redis:
+  mirror_whole_quote: true      # 需 xtquant.data.whole_quote_enabled
+  mirror_ephemeral: true        # gRPC 临时流也写 Redis
+  publish_subscription_ready: true
+  circuit_breaker_enabled: true
+```
+
+`/health/ready` 的 `checks.redis.metrics` 含 `publish_total`、`publish_errors`、`circuit_open` 等。
 
 ## 文档约定
 

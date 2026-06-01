@@ -229,6 +229,7 @@ class XtDataSubscriptionHub:
             f"created quote subscription: id={subscription_id}, symbols={record.symbols}, period={record.period}, count={record.count}, persistent={persistent}"
         )
         self._start_mock_redis_feeder_if_needed(record)
+        self._notify_subscription_ready(record)
         return subscription_id
 
     def _create_whole_quote_subscription(self, spec: WholeQuoteSubscriptionSpec, persistent: bool) -> str:
@@ -259,7 +260,12 @@ class XtDataSubscriptionHub:
             f"created whole-quote subscription: id={subscription_id}, markets={record.markets}, persistent={persistent}"
         )
         self._start_mock_redis_feeder_if_needed(record)
+        self._notify_subscription_ready(record)
         return subscription_id
+
+    def _notify_subscription_ready(self, record: SubscriptionRecord) -> None:
+        if self.redis_sink is not None:
+            self.redis_sink.publish_subscription_ready(record)
 
     def _start_mock_redis_feeder_if_needed(self, record: SubscriptionRecord) -> None:
         if self.settings.xtquant.mode != XTQuantMode.MOCK:

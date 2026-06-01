@@ -106,3 +106,7 @@ redis:
   mirror_ephemeral: false
   mirror_whole_quote: false
   whole_quote_maxlen: 5000
+  publish_subscription_ready: true
+  circuit_breaker_enabled: true
+  circuit_breaker_failure_threshold: 10
+  circuit_breaker_cooldown_seconds: 30
