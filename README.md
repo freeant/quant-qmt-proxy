@@ -347,6 +347,10 @@ quant-qmt-proxy/
 └── start.py            # 启动脚本
 ```
 
+## 设计文档
+
+- [行情 Redis Stream 广播（局域网异构消费者）](docs/design-redis-stream-market-data.md) — 设计说明 v0.2（评审通过，待实现）
+
 ## 文档约定
 
 涉及 xtquant / QMT 的接口签名、生命周期、返回结构和调用方式时，以两类来源为准：
