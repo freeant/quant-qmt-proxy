@@ -499,6 +499,15 @@ class XtDataSubscriptionHub:
                 record.subscription_id,
                 record.subscription_type,
             )
+            if (
+                self.redis_sink.config.mirror_symbol_streams
+                and record.subscription_type == "quote"
+                and record.symbols
+            ):
+                payload["redis_symbol_stream_keys"] = {
+                    symbol: self.redis_sink.build_symbol_stream_key(symbol)
+                    for symbol in record.symbols
+                }
         return payload
 
     def _get_record(self, subscription_id: str) -> SubscriptionRecord:

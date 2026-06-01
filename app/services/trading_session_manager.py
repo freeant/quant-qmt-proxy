@@ -9,6 +9,7 @@ from typing import Any, Callable, Iterator
 
 from app.config import AccountKind, Settings, XTQuantMode, XTQuantTradingAccountConfig
 from app.services.contracts import CancelStockOrderCommand, OpenSessionCommand, SubmitStockOrderCommand
+from app.services.redis_stream_sink import RedisStreamSink
 from app.services.trading_event_hub import TradingEventHub
 from app.services.xttrader_gateway import XTQUANT_TRADER_AVAILABLE, XTTraderGateway
 from app.utils.exceptions import TradingServiceException
@@ -47,9 +48,15 @@ class TradingSessionManager:
         "1": 1,
     }
 
-    def __init__(self, settings: Settings, event_hub: TradingEventHub | None = None):
+    def __init__(
+        self,
+        settings: Settings,
+        event_hub: TradingEventHub | None = None,
+        redis_sink: RedisStreamSink | None = None,
+    ):
         self.settings = settings
         self.event_hub = event_hub or TradingEventHub()
+        self.redis_sink = redis_sink
         self._lock = threading.RLock()
         self._sessions: dict[str, TradingSession] = {}
         self._mock_order_counter = 1000
@@ -115,6 +122,8 @@ class TradingSessionManager:
             return False
         session.accept_events = False
         self.event_hub.close_session_streams(session_id)
+        if self.redis_sink is not None:
+            self.redis_sink.on_trading_session_closed(session_id)
         with self._lock:
             self._sessions.pop(session_id, None)
 
@@ -410,7 +419,7 @@ class TradingSessionManager:
         }
 
     def _serialize_session(self, session: TradingSession) -> dict[str, Any]:
-        return {
+        payload = {
             "session_id": session.session_id,
             "account_id": session.account_id,
             "account_type": session.account_type,
@@ -422,6 +431,9 @@ class TradingSessionManager:
             "orders_enabled": session.orders_enabled,
             "opened_at_ms": session.opened_at_ms,
         }
+        if self.redis_sink is not None and self.redis_sink.enabled and self.redis_sink.config.mirror_trading_events:
+            payload["redis_trading_stream_key"] = self.redis_sink.build_trading_stream_key(session.session_id)
+        return payload
 
     def _build_mock_order(self, session: TradingSession, command: SubmitStockOrderCommand) -> dict[str, Any]:
         with self._lock:
@@ -619,14 +631,14 @@ class TradingSessionManager:
             )
 
     def _publish_event(self, session_id: str, event_type: str, payload: dict[str, Any]) -> None:
-        self.event_hub.publish(
-            session_id,
-            {
-                "event_time_ms": int(time.time() * 1000),
-                "event_type": event_type,
-                "payload": payload,
-            },
-        )
+        event = {
+            "event_time_ms": int(time.time() * 1000),
+            "event_type": event_type,
+            "payload": payload,
+        }
+        self.event_hub.publish(session_id, event)
+        if self.redis_sink is not None:
+            self.redis_sink.publish_trading_event(session_id, event)
 
     def _to_epoch_ms(self, value: Any) -> int:
         if isinstance(value, datetime):

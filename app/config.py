@@ -119,6 +119,19 @@ class RedisConfig(BaseModel):
     circuit_breaker_enabled: bool = True
     circuit_breaker_failure_threshold: int = 10
     circuit_breaker_cooldown_seconds: float = 30.0
+    mirror_symbol_streams: bool = False
+    symbol_stream_maxlen: int = 5000
+    mirror_trading_events: bool = False
+    trading_stream_maxlen: int = 2000
+    trading_stream_grace_ttl_seconds: int = 60
+    ssl_enabled: bool = False
+    ssl_cert_reqs: str = "required"
+    ssl_ca_certs: str | None = None
+    sentinel_enabled: bool = False
+    sentinel_hosts: list[str] = Field(default_factory=list)
+    sentinel_service_name: str = "mymaster"
+    sentinel_password: str | None = None
+    sentinel_db: int = 0
 
 
 class Settings(BaseModel):
@@ -230,6 +243,11 @@ def load_config(
     enable_prod_orders_override = os.getenv("APP_ENABLE_PROD_ORDERS")
     redis_url_override = os.getenv("REDIS_URL")
     redis_enabled_override = os.getenv("REDIS_ENABLED")
+    redis_mirror_symbol_streams_override = os.getenv("REDIS_MIRROR_SYMBOL_STREAMS")
+    redis_mirror_trading_events_override = os.getenv("REDIS_MIRROR_TRADING_EVENTS")
+    redis_ssl_enabled_override = os.getenv("REDIS_SSL_ENABLED")
+    redis_sentinel_enabled_override = os.getenv("REDIS_SENTINEL_ENABLED")
+    redis_sentinel_service_name_override = os.getenv("REDIS_SENTINEL_SERVICE_NAME")
     xtquant_config = config_data.get("xtquant", {})
     redis_config = config_data.get("redis", {})
     xtquant_data_config = xtquant_config.get("data", {})
@@ -357,6 +375,40 @@ def load_config(
             "circuit_breaker_cooldown_seconds": float(
                 redis_config.get("circuit_breaker_cooldown_seconds", 30)
             ),
+            "mirror_symbol_streams": (
+                _env_flag("REDIS_MIRROR_SYMBOL_STREAMS", False)
+                if redis_mirror_symbol_streams_override is not None
+                else redis_config.get("mirror_symbol_streams", False)
+            ),
+            "symbol_stream_maxlen": int(redis_config.get("symbol_stream_maxlen", 5000)),
+            "mirror_trading_events": (
+                _env_flag("REDIS_MIRROR_TRADING_EVENTS", False)
+                if redis_mirror_trading_events_override is not None
+                else redis_config.get("mirror_trading_events", False)
+            ),
+            "trading_stream_maxlen": int(redis_config.get("trading_stream_maxlen", 2000)),
+            "trading_stream_grace_ttl_seconds": int(
+                redis_config.get("trading_stream_grace_ttl_seconds", 60)
+            ),
+            "ssl_enabled": (
+                _env_flag("REDIS_SSL_ENABLED", False)
+                if redis_ssl_enabled_override is not None
+                else redis_config.get("ssl_enabled", False)
+            ),
+            "ssl_cert_reqs": redis_config.get("ssl_cert_reqs", "required"),
+            "ssl_ca_certs": redis_config.get("ssl_ca_certs"),
+            "sentinel_enabled": (
+                _env_flag("REDIS_SENTINEL_ENABLED", False)
+                if redis_sentinel_enabled_override is not None
+                else redis_config.get("sentinel_enabled", False)
+            ),
+            "sentinel_hosts": redis_config.get("sentinel_hosts", []),
+            "sentinel_service_name": (
+                redis_sentinel_service_name_override
+                or redis_config.get("sentinel_service_name", "mymaster")
+            ),
+            "sentinel_password": redis_config.get("sentinel_password"),
+            "sentinel_db": int(redis_config.get("sentinel_db", 0)),
         },
         "grpc_enabled": config_data.get("grpc", {}).get("enabled", True),
         "grpc_host": grpc_env_host or config_data.get("grpc", {}).get("host", "0.0.0.0"),

@@ -92,7 +92,11 @@ def get_trading_event_hub() -> TradingEventHub:
 def get_trading_session_manager(settings: Settings = Depends(get_settings)) -> TradingSessionManager:
     global _trading_session_manager
     if _trading_session_manager is None:
-        _trading_session_manager = TradingSessionManager(settings, get_trading_event_hub())
+        _trading_session_manager = TradingSessionManager(
+            settings,
+            get_trading_event_hub(),
+            get_redis_stream_sink(settings),
+        )
     return _trading_session_manager
 
 

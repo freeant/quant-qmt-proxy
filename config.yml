@@ -110,3 +110,16 @@ redis:
   circuit_breaker_enabled: true
   circuit_breaker_failure_threshold: 10
   circuit_breaker_cooldown_seconds: 30
+  mirror_symbol_streams: false
+  symbol_stream_maxlen: 5000
+  mirror_trading_events: false
+  trading_stream_maxlen: 2000
+  trading_stream_grace_ttl_seconds: 60
+  ssl_enabled: false
+  ssl_cert_reqs: "required"
+  ssl_ca_certs:
+  sentinel_enabled: false
+  sentinel_hosts: []
+  sentinel_service_name: "mymaster"
+  sentinel_password:
+  sentinel_db: 0

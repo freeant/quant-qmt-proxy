@@ -372,7 +372,7 @@ quant-qmt-proxy/
 
 ## 设计文档
 
-- [行情 Redis Stream 广播（局域网异构消费者）](docs/design-redis-stream-market-data.md) — Phase 1/2 已实现
+- [行情 Redis Stream 广播（局域网异构消费者）](docs/design-redis-stream-market-data.md) — Phase 1/2/3 已实现
 
 启用方式（可选）：
 
@@ -395,6 +395,19 @@ redis:
 ```
 
 `/health/ready` 的 `checks.redis.metrics` 含 `publish_total`、`publish_errors`、`circuit_open` 等。
+
+Phase 3 配置示例：
+
+```yaml
+redis:
+  mirror_symbol_streams: true   # 额外写入 qmt:symbol:{symbol}，多消费者共享
+  mirror_trading_events: true   # 写入 qmt:trading:{session_id}，开 session 后响应含 redis_trading_stream_key
+  ssl_enabled: true             # 或 URL 使用 rediss://
+  ssl_ca_certs: "/path/to/ca.pem"
+  sentinel_enabled: true
+  sentinel_hosts: ["10.0.0.1:26379", "10.0.0.2:26379"]
+  sentinel_service_name: "mymaster"
+```
 
 ## 文档约定
 
