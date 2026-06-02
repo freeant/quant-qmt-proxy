@@ -170,6 +170,25 @@ def real_account():
     }
 
 
+def test_list_trading_accounts_mock():
+    manager = TradingSessionManager(build_settings("mock"), TradingEventHub())
+    accounts = manager.list_trading_accounts()
+    assert len(accounts) == 1
+    assert accounts[0]["account_kind"] == "mock"
+    assert accounts[0]["orders_enabled"] is True
+
+
+def test_list_trading_accounts_filters_by_mode():
+    manager = TradingSessionManager(
+        build_settings("dev", accounts=[simulated_account(), real_account()]),
+        TradingEventHub(),
+    )
+    accounts = manager.list_trading_accounts()
+    assert len(accounts) == 1
+    assert accounts[0]["account_id"] == "SIM-001"
+    assert accounts[0]["account_kind"] == "simulated"
+
+
 def test_open_session_uses_real_gateway_in_dev_for_registered_simulated_account(monkeypatch):
     monkeypatch.setattr(manager_module, "XTTraderGateway", FakeGateway)
     monkeypatch.setattr(manager_module, "XTQUANT_TRADER_AVAILABLE", True)

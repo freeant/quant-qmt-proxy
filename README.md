@@ -257,6 +257,7 @@ copy config.test.local.example.yml config.test.local.yml
 
 交易接口：
 
+- `GET /api/v1/trading/accounts` — 当前模式下可用的资金账户列表（开 session 前查询）
 - `POST /api/v1/trading/sessions`
 - `GET /api/v1/trading/sessions/{session_id}`
 - `DELETE /api/v1/trading/sessions/{session_id}`
@@ -302,6 +303,7 @@ copy config.test.local.example.yml config.test.local.yml
 - `OpenSession`
 - `CloseSession`
 - `GetSession`
+- `ListTradingAccounts`
 - `GetStockAsset`
 - `GetStockPositions`
 - `GetStockOrders`

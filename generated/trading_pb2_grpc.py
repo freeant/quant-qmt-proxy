@@ -3,6 +3,7 @@
 import grpc
 import warnings
 
+from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
 import generated.trading_pb2 as trading__pb2
 
 GRPC_GENERATED_VERSION = '1.80.0'
@@ -48,6 +49,11 @@ class TradingServiceStub(object):
                 '/qmt.trading.TradingService/GetSession',
                 request_serializer=trading__pb2.GetSessionRequest.SerializeToString,
                 response_deserializer=trading__pb2.GetSessionResponse.FromString,
+                _registered_method=True)
+        self.ListTradingAccounts = channel.unary_unary(
+                '/qmt.trading.TradingService/ListTradingAccounts',
+                request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+                response_deserializer=trading__pb2.ListTradingAccountsResponse.FromString,
                 _registered_method=True)
         self.GetStockAsset = channel.unary_unary(
                 '/qmt.trading.TradingService/GetStockAsset',
@@ -102,6 +108,12 @@ class TradingServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def GetSession(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ListTradingAccounts(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -166,6 +178,11 @@ def add_TradingServiceServicer_to_server(servicer, server):
                     servicer.GetSession,
                     request_deserializer=trading__pb2.GetSessionRequest.FromString,
                     response_serializer=trading__pb2.GetSessionResponse.SerializeToString,
+            ),
+            'ListTradingAccounts': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListTradingAccounts,
+                    request_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+                    response_serializer=trading__pb2.ListTradingAccountsResponse.SerializeToString,
             ),
             'GetStockAsset': grpc.unary_unary_rpc_method_handler(
                     servicer.GetStockAsset,
@@ -284,6 +301,33 @@ class TradingService(object):
             '/qmt.trading.TradingService/GetSession',
             trading__pb2.GetSessionRequest.SerializeToString,
             trading__pb2.GetSessionResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ListTradingAccounts(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/qmt.trading.TradingService/ListTradingAccounts',
+            google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+            trading__pb2.ListTradingAccountsResponse.FromString,
             options,
             channel_credentials,
             insecure,

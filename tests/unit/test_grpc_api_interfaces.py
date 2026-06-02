@@ -28,6 +28,7 @@ GRPC_TESTED_METHODS = {
     "OpenSession",
     "CloseSession",
     "GetSession",
+    "ListTradingAccounts",
     "GetStockAsset",
     "GetStockPositions",
     "GetStockOrders",
@@ -246,6 +247,19 @@ def test_grpc_stream_whole_quote_interface(grpc_test_context: GrpcTestContext):
     event = next(stream)
     assert event.symbol
     assert event.HasField("tick") or event.HasField("kline")
+
+
+def test_grpc_list_trading_accounts(grpc_test_context: GrpcTestContext):
+    response = grpc_test_context.trading_stub.ListTradingAccounts(
+        empty_pb2.Empty(),
+        metadata=grpc_test_context.metadata,
+    )
+    assert response.status.code == 0
+    assert response.items
+    account = response.items[0]
+    assert account.account_id
+    assert account.account_kind == grpc_test_context.runtime.account_kind
+    assert account.orders_enabled is grpc_test_context.runtime.orders_enabled
 
 
 def test_grpc_trading_session_interfaces(

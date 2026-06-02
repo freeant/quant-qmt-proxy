@@ -1,4 +1,5 @@
 import common_pb2 as _common_pb2
+from google.protobuf import empty_pb2 as _empty_pb2
 from google.protobuf.internal import containers as _containers
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
@@ -74,6 +75,28 @@ class GetSessionResponse(_message.Message):
     session: SessionInfo
     status: _common_pb2.Status
     def __init__(self, session: _Optional[_Union[SessionInfo, _Mapping]] = ..., status: _Optional[_Union[_common_pb2.Status, _Mapping]] = ...) -> None: ...
+
+class TradingAccountProfile(_message.Message):
+    __slots__ = ("name", "account_id", "account_type", "account_kind", "orders_enabled")
+    NAME_FIELD_NUMBER: _ClassVar[int]
+    ACCOUNT_ID_FIELD_NUMBER: _ClassVar[int]
+    ACCOUNT_TYPE_FIELD_NUMBER: _ClassVar[int]
+    ACCOUNT_KIND_FIELD_NUMBER: _ClassVar[int]
+    ORDERS_ENABLED_FIELD_NUMBER: _ClassVar[int]
+    name: str
+    account_id: str
+    account_type: _common_pb2.SecurityAccountType
+    account_kind: str
+    orders_enabled: bool
+    def __init__(self, name: _Optional[str] = ..., account_id: _Optional[str] = ..., account_type: _Optional[_Union[_common_pb2.SecurityAccountType, str]] = ..., account_kind: _Optional[str] = ..., orders_enabled: bool = ...) -> None: ...
+
+class ListTradingAccountsResponse(_message.Message):
+    __slots__ = ("items", "status")
+    ITEMS_FIELD_NUMBER: _ClassVar[int]
+    STATUS_FIELD_NUMBER: _ClassVar[int]
+    items: _containers.RepeatedCompositeFieldContainer[TradingAccountProfile]
+    status: _common_pb2.Status
+    def __init__(self, items: _Optional[_Iterable[_Union[TradingAccountProfile, _Mapping]]] = ..., status: _Optional[_Union[_common_pb2.Status, _Mapping]] = ...) -> None: ...
 
 class GetStockAssetRequest(_message.Message):
     __slots__ = ("session_id",)

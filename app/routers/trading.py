@@ -18,6 +18,17 @@ router = APIRouter(prefix="/api/v1/trading", tags=["交易服务"])
 SIDE_TO_XT = {"BUY": 23, "SELL": 24}
 
 
+@router.get("/accounts")
+async def list_trading_accounts(
+    api_key: str | None = Depends(verify_api_key),
+    trading_manager: TradingSessionManager = Depends(get_trading_session_manager),
+):
+    return format_response(
+        data={"items": trading_manager.list_trading_accounts()},
+        message="获取资金账户列表成功",
+    )
+
+
 @router.post("/sessions")
 async def open_session(
     request: OpenSessionRequestModel,

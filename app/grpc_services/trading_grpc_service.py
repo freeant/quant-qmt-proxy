@@ -52,6 +52,16 @@ class TradingGrpcService(trading_pb2_grpc.TradingServiceServicer):
         except TradingServiceException as exc:
             return self._error_response(context, exc, trading_pb2.GetSessionResponse)
 
+    def ListTradingAccounts(self, request, context):
+        try:
+            accounts = self.trading_manager.list_trading_accounts()
+            return trading_pb2.ListTradingAccountsResponse(
+                items=[self._to_trading_account_profile(item) for item in accounts],
+                status=self._status(),
+            )
+        except TradingServiceException as exc:
+            return self._error_response(context, exc, trading_pb2.ListTradingAccountsResponse)
+
     def GetStockAsset(self, request, context):
         try:
             asset = self.trading_manager.get_stock_asset(request.session_id)
@@ -150,6 +160,18 @@ class TradingGrpcService(trading_pb2_grpc.TradingServiceServicer):
             account_kind=session.get("account_kind", ""),
             orders_enabled=session.get("orders_enabled", False),
             account_profile=session.get("account_profile", "") or "",
+        )
+
+    def _to_trading_account_profile(self, account: dict):
+        return trading_pb2.TradingAccountProfile(
+            name=account.get("name", ""),
+            account_id=account.get("account_id", ""),
+            account_type=ACCOUNT_TYPE_TO_PROTO.get(
+                account.get("account_type", "STOCK"),
+                common_pb2.SECURITY_ACCOUNT_TYPE_STOCK,
+            ),
+            account_kind=account.get("account_kind", ""),
+            orders_enabled=account.get("orders_enabled", False),
         )
 
     def _to_stock_asset(self, asset: dict):

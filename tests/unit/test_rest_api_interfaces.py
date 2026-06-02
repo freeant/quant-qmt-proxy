@@ -23,6 +23,7 @@ REST_TESTED_ENDPOINTS = {
     "/api/v1/data/subscriptions/whole-quote",
     "/api/v1/data/subscriptions",
     "/api/v1/data/subscriptions/{subscription_id}",
+    "/api/v1/trading/accounts",
     "/api/v1/trading/sessions",
     "/api/v1/trading/sessions/{session_id}",
     "/api/v1/trading/sessions/{session_id}/asset",
@@ -206,6 +207,17 @@ def test_rest_whole_quote_subscription_crud_interfaces(rest_test_context: RestTe
 
     delete_data = _request_json(rest_test_context, "delete", f"/api/v1/data/subscriptions/{subscription_id}")
     assert delete_data["success"] is True
+
+
+def test_rest_list_trading_accounts(rest_test_context: RestTestContext):
+    data = _request_json(rest_test_context, "get", "/api/v1/trading/accounts")
+    assert isinstance(data["items"], list)
+    assert data["items"]
+    account = data["items"][0]
+    assert account["account_id"]
+    assert account["account_type"]
+    assert account["account_kind"] == rest_test_context.runtime.account_kind
+    assert account["orders_enabled"] is rest_test_context.runtime.orders_enabled
 
 
 def test_rest_trading_session_interfaces(

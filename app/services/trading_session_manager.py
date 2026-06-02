@@ -61,6 +61,41 @@ class TradingSessionManager:
         self._sessions: dict[str, TradingSession] = {}
         self._mock_order_counter = 1000
 
+    def list_trading_accounts(self) -> list[dict[str, Any]]:
+        mode = self.settings.xtquant.mode
+        if mode == XTQuantMode.MOCK:
+            return [
+                {
+                    "name": "mock",
+                    "account_id": self.settings.xtquant.trading.mock_account_id,
+                    "account_type": "STOCK",
+                    "account_kind": AccountKind.MOCK.value,
+                    "orders_enabled": True,
+                }
+            ]
+
+        items: list[dict[str, Any]] = []
+        for profile in self.settings.xtquant.trading.accounts:
+            if not profile.enabled:
+                continue
+            if mode not in profile.allowed_modes:
+                continue
+            if mode == XTQuantMode.DEV and profile.account_kind != AccountKind.SIMULATED:
+                continue
+            if mode == XTQuantMode.PROD and profile.account_kind != AccountKind.REAL:
+                continue
+            account_kind = profile.account_kind.value
+            items.append(
+                {
+                    "name": profile.name,
+                    "account_id": profile.account_id,
+                    "account_type": self._normalize_account_type(profile.account_type),
+                    "account_kind": account_kind,
+                    "orders_enabled": self._orders_enabled(mode, account_kind),
+                }
+            )
+        return items
+
     def open_session(self, command: OpenSessionCommand) -> dict[str, Any]:
         session_id = f"session_{command.account_id}_{uuid.uuid4().hex[:10]}"
         mode = self.settings.xtquant.mode

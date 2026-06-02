@@ -203,7 +203,23 @@ Tick 历史。请求体字段：`symbols`、`start_time`、`end_time`、`fields`
 
 前缀：`/api/v1/trading`
 
-### 4.1 `POST /sessions`
+### 4.1 `GET /accounts`
+
+查询当前运行模式下可用的资金账户列表（来自 `config.yml` 中 `xtquant.trading.accounts` 配置；`mock` 模式返回内置 mock 账户）。**无需**先创建 session。
+
+**响应 `data`**：`{ "items": [ ... ] }`，每项字段：
+
+| 字段 | 说明 |
+|------|------|
+| `name` | 配置 profile 名称 |
+| `account_id` | 资金账号 |
+| `account_type` | 账户类型，如 `STOCK` |
+| `account_kind` | `mock` / `simulated` / `real` |
+| `orders_enabled` | 当前模式下是否允许下单 |
+
+`dev` 仅返回 `simulated` 账户；`prod` 仅返回 `real` 账户。
+
+### 4.2 `POST /sessions`
 
 创建交易会话。
 
@@ -225,23 +241,23 @@ Tick 历史。请求体字段：`symbols`、`start_time`、`end_time`、`fields`
 | `opened_at_ms` | 创建时间戳 |
 | `redis_trading_stream_key` | `mirror_trading_events=true` 且 Redis 启用时返回 |
 
-### 4.2 `GET /sessions/{session_id}`
+### 4.3 `GET /sessions/{session_id}`
 
 查询会话；不存在时业务异常。
 
-### 4.3 `DELETE /sessions/{session_id}`
+### 4.4 `DELETE /sessions/{session_id}`
 
 关闭会话并断开 gateway。**响应 `data`**：`{ "success": bool }`
 
-### 4.4 `GET /sessions/{session_id}/asset`
+### 4.5 `GET /sessions/{session_id}/asset`
 
 资金资产。
 
-### 4.5 `GET /sessions/{session_id}/positions`
+### 4.6 `GET /sessions/{session_id}/positions`
 
 持仓列表。**响应 `data`**：`{ "items": [...] }`
 
-### 4.6 `GET /sessions/{session_id}/orders`
+### 4.7 `GET /sessions/{session_id}/orders`
 
 委托列表。
 
@@ -249,11 +265,11 @@ Tick 历史。请求体字段：`symbols`、`start_time`、`end_time`、`fields`
 |----------|------|------|------|
 | `cancelable_only` | bool | `false` | 仅可撤单 |
 
-### 4.7 `GET /sessions/{session_id}/trades`
+### 4.8 `GET /sessions/{session_id}/trades`
 
 成交列表。**响应 `data`**：`{ "items": [...] }`
 
-### 4.8 `POST /sessions/{session_id}/orders`
+### 4.9 `POST /sessions/{session_id}/orders`
 
 下单。
 
@@ -269,13 +285,13 @@ Tick 历史。请求体字段：`symbols`、`start_time`、`end_time`、`fields`
 
 **响应 `data`**：订单对象（含 `order_id` 等）。
 
-### 4.9 `POST /sessions/{session_id}/cancel`
+### 4.10 `POST /sessions/{session_id}/cancel`
 
 撤单。至少提供以下之一：`order_id`；或 `market` + `order_sysid`。
 
 **响应 `data`**：`{ "success": bool }`
 
-### 4.10 交易事件类型（gRPC `StreamTradingEvents` / Redis Stream）
+### 4.11 交易事件类型（gRPC `StreamTradingEvents` / Redis Stream）
 
 流式事件统一结构：
 
@@ -352,7 +368,7 @@ Proto 定义见仓库 `proto/` 目录。生成代码：`python scripts/generate_
 | 服务 | Proto | RPC |
 |------|-------|-----|
 | **Data** | `proto/data.proto` | `GetKlineHistory`、`GetTickHistory`、`GetFullTickSnapshot`、`GetFinancialData`、`GetInstrumentDetail`、`GetTradingCalendar`、`GetIndexWeight`、`GetSectorList`、`GetL2Quote`、`GetL2Order`、`GetL2Transaction`、`StreamQuote`、`StreamWholeQuote` |
-| **Trading** | `proto/trading.proto` | `OpenSession`、`CloseSession`、`GetSession`、`GetStockAsset`、`GetStockPositions`、`GetStockOrders`、`GetStockTrades`、`SubmitStockOrder`、`CancelStockOrder`、`StreamTradingEvents` |
+| **Trading** | `proto/trading.proto` | `ListTradingAccounts`、`OpenSession`、`CloseSession`、`GetSession`、`GetStockAsset`、`GetStockPositions`、`GetStockOrders`、`GetStockTrades`、`SubmitStockOrder`、`CancelStockOrder`、`StreamTradingEvents` |
 | **Health** | `proto/health.proto` | `Check`（标准 gRPC 健康检查） |
 
 ### 7.2 鉴权与端口

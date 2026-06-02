@@ -3,6 +3,7 @@ syntax = "proto3";
 package qmt.trading;
 
 import "common.proto";
+import "google/protobuf/empty.proto";
 
 message SessionInfo {
   string session_id = 1;
@@ -42,6 +43,19 @@ message GetSessionRequest {
 
 message GetSessionResponse {
   SessionInfo session = 1;
+  qmt.common.Status status = 2;
+}
+
+message TradingAccountProfile {
+  string name = 1;
+  string account_id = 2;
+  qmt.common.SecurityAccountType account_type = 3;
+  string account_kind = 4;
+  bool orders_enabled = 5;
+}
+
+message ListTradingAccountsResponse {
+  repeated TradingAccountProfile items = 1;
   qmt.common.Status status = 2;
 }
 
@@ -229,6 +243,7 @@ service TradingService {
   rpc OpenSession(OpenSessionRequest) returns (OpenSessionResponse);
   rpc CloseSession(CloseSessionRequest) returns (CloseSessionResponse);
   rpc GetSession(GetSessionRequest) returns (GetSessionResponse);
+  rpc ListTradingAccounts(google.protobuf.Empty) returns (ListTradingAccountsResponse);
   rpc GetStockAsset(GetStockAssetRequest) returns (GetStockAssetResponse);
   rpc GetStockPositions(GetStockPositionsRequest) returns (GetStockPositionsResponse);
   rpc GetStockOrders(GetStockOrdersRequest) returns (GetStockOrdersResponse);
