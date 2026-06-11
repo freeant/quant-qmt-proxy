@@ -177,6 +177,12 @@ def test_http_error_mapping_uses_service_unavailable_for_xtquant_runtime_failure
     assert trading_error.status_code == 503
     assert trading_error.detail["error_code"] == "XTTRADER_UNAVAILABLE"
 
+    timeout_error = handle_xtquant_exception(
+        DataServiceException("xtdata query timed out", error_code="XTDATA_TIMEOUT")
+    )
+    assert timeout_error.status_code == 504
+    assert timeout_error.detail["error_code"] == "XTDATA_TIMEOUT"
+
 
 def test_grpc_error_mapping_uses_unavailable_for_xtquant_runtime_failures():
     data_service = DataGrpcService(market_data_service=object(), reference_data_service=object())

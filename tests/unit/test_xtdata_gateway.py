@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import threading
 import time
 
 import pytest
@@ -267,6 +268,94 @@ def test_kline_history_sanitizes_non_finite_values(monkeypatch):
     assert bar["high"] is None
     assert bar["low"] is None
     assert bar["close"] == 10.5
+
+
+def test_get_market_data_timeout_marks_xtdata_stale(monkeypatch):
+    settings = build_settings("dev")
+    settings.xtquant.data.query_timeout_seconds = 0.1
+    monkeypatch.setattr(XtDataGateway, "_try_initialize", lambda self: setattr(self, "_initialized", True))
+    gateway = XtDataGateway(settings)
+    started = threading.Event()
+
+    class DummyXtData:
+        @staticmethod
+        def get_market_data(**kwargs):
+            started.set()
+            time.sleep(1.0)
+
+    monkeypatch.setattr(xtdata_gateway_module, "xtdata", DummyXtData())
+
+    with pytest.raises(DataServiceException) as exc:
+        gateway.get_kline_history(
+            KlineHistoryQuery(symbols=["000001.SZ"], period="1d", auto_download=False)
+        )
+
+    assert started.is_set()
+    assert exc.value.error_code == "XTDATA_TIMEOUT"
+    assert gateway._initialized is False
+
+
+def test_download_history_times_out(monkeypatch):
+    settings = build_settings("dev")
+    settings.xtquant.data.query_timeout_seconds = 1.0
+    settings.xtquant.data.download_timeout_seconds = 0.1
+    monkeypatch.setattr(XtDataGateway, "_try_initialize", lambda self: setattr(self, "_initialized", True))
+    gateway = XtDataGateway(settings)
+
+    class DummyXtData:
+        @staticmethod
+        def get_market_data(**kwargs):
+            return _build_kline_raw(kwargs["stock_list"], columns=[])
+
+        @staticmethod
+        def download_history_data2(symbols, period, start_time="", end_time=""):
+            time.sleep(1.0)
+
+    monkeypatch.setattr(xtdata_gateway_module, "xtdata", DummyXtData())
+
+    with pytest.raises(DataServiceException) as exc:
+        gateway.get_kline_history(
+            KlineHistoryQuery(
+                symbols=["000001.SZ"],
+                period="1d",
+                start_time="20240101",
+                end_time="20240102",
+            )
+        )
+
+    assert exc.value.error_code == "XTDATA_TIMEOUT"
+
+
+def test_probe_connection_reports_mock_mode():
+    gateway = XtDataGateway(build_settings("mock"))
+    assert gateway.probe_connection() == {"healthy": True, "status": "mock", "action": "none"}
+
+
+def test_probe_connection_marks_stale_and_reconnects_on_timeout(monkeypatch):
+    settings = build_settings("dev")
+    settings.xtquant.data.probe_timeout_seconds = 0.1
+    monkeypatch.setattr(XtDataGateway, "_try_initialize", lambda self: setattr(self, "_initialized", True))
+    gateway = XtDataGateway(settings)
+    reconnect_calls = {"count": 0}
+
+    class DummyXtData:
+        @staticmethod
+        def get_full_tick(symbols):
+            time.sleep(1.0)
+
+    def fake_reconnect(self) -> bool:
+        reconnect_calls["count"] += 1
+        self._initialized = True
+        return True
+
+    monkeypatch.setattr(xtdata_gateway_module, "xtdata", DummyXtData())
+    monkeypatch.setattr(XtDataGateway, "_attempt_reconnect", fake_reconnect)
+
+    result = gateway.probe_connection()
+
+    assert result["healthy"] is True
+    assert result["action"] == "reconnect"
+    assert reconnect_calls["count"] == 1
 
 
 def test_trading_calendar_unsupported_maps_to_feature_not_supported(monkeypatch):

@@ -10,6 +10,7 @@ from app.models.api_requests import (
 )
 from app.services.contracts import CancelStockOrderCommand, OpenSessionCommand, SubmitStockOrderCommand
 from app.services.trading_session_manager import TradingSessionManager
+from app.utils.blocking_executor import run_blocking_async
 from app.utils.exceptions import TradingServiceException, handle_xtquant_exception
 from app.utils.helpers import format_response
 
@@ -36,7 +37,10 @@ async def open_session(
     trading_manager: TradingSessionManager = Depends(get_trading_session_manager),
 ):
     try:
-        session = trading_manager.open_session(OpenSessionCommand(request.account_id, request.account_type))
+        session = await run_blocking_async(
+            trading_manager.open_session,
+            OpenSessionCommand(request.account_id, request.account_type),
+        )
         return format_response(data=session, message="创建交易会话成功")
     except TradingServiceException as exc:
         raise handle_xtquant_exception(exc)

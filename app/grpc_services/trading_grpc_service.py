@@ -4,6 +4,7 @@ import grpc
 
 from app.services.contracts import CancelStockOrderCommand, OpenSessionCommand, SubmitStockOrderCommand
 from app.services.trading_session_manager import TradingSessionManager
+from app.utils.blocking_executor import run_blocking
 from app.utils.exceptions import TradingServiceException
 from generated import common_pb2, trading_pb2, trading_pb2_grpc
 
@@ -28,11 +29,12 @@ class TradingGrpcService(trading_pb2_grpc.TradingServiceServicer):
 
     def OpenSession(self, request, context):
         try:
-            session = self.trading_manager.open_session(
+            session = run_blocking(
+                self.trading_manager.open_session,
                 OpenSessionCommand(
                     account_id=request.account_id,
                     account_type=ACCOUNT_TYPE_FROM_PROTO.get(request.account_type, "STOCK"),
-                )
+                ),
             )
             return trading_pb2.OpenSessionResponse(session=self._to_session_info(session), status=self._status())
         except TradingServiceException as exc:

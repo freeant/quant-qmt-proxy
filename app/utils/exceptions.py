@@ -67,6 +67,8 @@ def handle_xtquant_exception(exc: XTQuantException) -> HTTPException:
             status_code = status.HTTP_501_NOT_IMPLEMENTED
         elif exc.error_code in ["XTDATA_UNAVAILABLE", "SUBSCRIPTION_FAILED"]:
             status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+        elif exc.error_code == "XTDATA_TIMEOUT":
+            status_code = status.HTTP_504_GATEWAY_TIMEOUT
         else:
             status_code = status.HTTP_400_BAD_REQUEST
         

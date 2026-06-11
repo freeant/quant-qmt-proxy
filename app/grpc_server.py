@@ -12,7 +12,10 @@ from app.dependencies import (
     get_market_data_service,
     get_reference_data_service,
     get_trading_session_manager,
+    get_xtdata_gateway,
 )
+from app.services.process_health import ensure_heartbeat_loop
+from app.services.xtdata_probe import ensure_xtdata_probe_loop
 from app.grpc_services.data_grpc_service import DataGrpcService
 from app.grpc_services.health_grpc_service import HealthGrpcService
 from app.grpc_services.trading_grpc_service import TradingGrpcService
@@ -237,6 +240,8 @@ def create_grpc_server(settings: Settings | None = None) -> grpc.Server:
 
 def serve(settings: Settings | None = None) -> None:
     settings = settings or get_settings()
+    ensure_heartbeat_loop()
+    ensure_xtdata_probe_loop(get_xtdata_gateway(settings), settings)
     server = create_grpc_server(settings)
     server.start()
     bound_port = getattr(server, "_bound_port", settings.grpc_port)

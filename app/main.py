@@ -9,8 +9,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.config import get_settings
-from app.dependencies import get_trading_session_manager, get_ui_subscription_service
+from app.dependencies import get_trading_session_manager, get_ui_subscription_service, get_xtdata_gateway
 from app.services.process_health import ensure_heartbeat_loop
+from app.services.xtdata_probe import ensure_xtdata_probe_loop
 from app.routers import data, health, trading, websocket
 from app.utils.exceptions import XTQuantException, handle_xtquant_exception
 from app.utils.helpers import format_response
@@ -19,8 +20,9 @@ from app.utils.logger import configure_logging_from_settings, log_runtime_config
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    ensure_heartbeat_loop()
     settings = get_settings()
+    ensure_heartbeat_loop()
+    ensure_xtdata_probe_loop(get_xtdata_gateway(settings), settings)
     configure_logging_from_settings(settings)
     log_runtime_configuration("rest", settings)
     logger.info("application startup complete")

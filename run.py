@@ -8,9 +8,16 @@ import uvicorn
 sys.path.insert(0, os.path.dirname(__file__))
 
 from app.config import Settings, _normalize_app_servers, get_settings
+from app.dependencies import get_xtdata_gateway
 from app.grpc_server import create_grpc_server, serve as serve_grpc
 from app.services.process_health import ensure_heartbeat_loop
+from app.services.xtdata_probe import ensure_xtdata_probe_loop
 from app.utils.logger import configure_logging_from_settings, logger
+
+
+def _start_background_health(settings: Settings) -> None:
+    ensure_heartbeat_loop()
+    ensure_xtdata_probe_loop(get_xtdata_gateway(settings), settings)
 
 
 def run_rest_server(settings: Settings, reload_enabled: bool | None = None) -> None:
@@ -44,8 +51,8 @@ def print_banner(settings: Settings) -> None:
 
 
 def main() -> None:
-    ensure_heartbeat_loop()
     settings = get_settings()
+    _start_background_health(settings)
     settings.app_servers = _normalize_app_servers(settings.app_servers)
     configure_logging_from_settings(settings)
     print_banner(settings)

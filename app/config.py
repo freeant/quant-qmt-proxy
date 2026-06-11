@@ -58,6 +58,10 @@ class XTQuantDataConfig(BaseModel):
     max_subscriptions: int = 100
     heartbeat_interval: int = 60
     whole_quote_enabled: bool = False
+    query_timeout_seconds: float = 120.0
+    download_timeout_seconds: float = 300.0
+    probe_interval_seconds: float = 60.0
+    probe_timeout_seconds: float = 10.0
 
 
 class XTQuantTradingAccountConfig(BaseModel):
@@ -319,6 +323,18 @@ def load_config(
                     xtquant_data_config.get("heartbeat_timeout", 60),
                 ),
                 "whole_quote_enabled": xtquant_data_config.get("whole_quote_enabled", False),
+                "query_timeout_seconds": float(
+                    xtquant_data_config.get("query_timeout_seconds", 120.0)
+                ),
+                "download_timeout_seconds": float(
+                    xtquant_data_config.get("download_timeout_seconds", 300.0)
+                ),
+                "probe_interval_seconds": float(
+                    xtquant_data_config.get("probe_interval_seconds", 60.0)
+                ),
+                "probe_timeout_seconds": float(
+                    xtquant_data_config.get("probe_timeout_seconds", 10.0)
+                ),
             },
             "trading": {
                 "mock_account_id": xtquant_trading_config.get("mock_account_id", "mock_account_001"),

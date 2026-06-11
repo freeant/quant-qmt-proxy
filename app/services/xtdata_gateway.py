@@ -5,7 +5,8 @@ import os
 import threading
 import time
 from datetime import datetime, timedelta
-from typing import Any
+from collections.abc import Callable
+from typing import Any, TypeVar
 
 from app.config import Settings, XTQuantMode
 from app.services.contracts import FinancialDataQuery, KlineHistoryQuery, L2Query, TickHistoryQuery, TradingCalendarQuery
@@ -58,6 +59,12 @@ TICK_FIELDS = [
 
 CONNECT_JOIN_TIMEOUT_SECONDS = 5.0
 CONNECT_RETRY_COOLDOWN_SECONDS = 5.0
+PROBE_SYMBOL = "000001.SZ"
+
+_XTDATA_QUERY_LOCK = threading.Lock()
+_XTDATA_DOWNLOAD_LOCK = threading.Lock()
+
+_T = TypeVar("_T")
 
 
 def normalize_scalar(value: Any) -> Any:
@@ -247,6 +254,68 @@ class XtDataGateway:
                 + reason,
                 error_code="XTDATA_UNAVAILABLE",
             )
+
+    def _probe_timeout_seconds(self) -> float:
+        return max(float(self.settings.xtquant.data.probe_timeout_seconds), 0.01)
+
+    def _attempt_reconnect(self) -> bool:
+        with self._connect_lock:
+            thread = self._start_connect_thread_locked()
+        if thread is None:
+            return self._initialized
+        thread.join(timeout=CONNECT_JOIN_TIMEOUT_SECONDS)
+        if thread.is_alive():
+            logger.warning("xtdata reconnect attempt timed out during probe")
+        return self._initialized
+
+    def probe_connection(self) -> dict[str, Any]:
+        if self._is_mock_mode():
+            return {"healthy": True, "status": "mock", "action": "none"}
+        if not XTQUANT_DATA_AVAILABLE:
+            return {
+                "healthy": False,
+                "status": "unavailable",
+                "action": "none",
+                "reason": "xtquant.xtdata is unavailable",
+            }
+
+        was_initialized = self._initialized
+        if not self._initialized:
+            self._attempt_reconnect()
+            if not self._initialized:
+                reason = self._last_connect_error or "xtdata is not connected"
+                return {
+                    "healthy": False,
+                    "status": "disconnected",
+                    "action": "reconnect",
+                    "reason": reason,
+                }
+
+        def call() -> None:
+            with _XTDATA_QUERY_LOCK:
+                xtdata.get_full_tick([PROBE_SYMBOL])
+
+        try:
+            self._run_xtdata_call(
+                operation="probe",
+                timeout_seconds=self._probe_timeout_seconds(),
+                func=call,
+            )
+            with self._connect_lock:
+                self._initialized = True
+                self._last_connect_error = None
+            action = "none" if was_initialized else "connected"
+            return {"healthy": True, "status": "connected", "action": action}
+        except DataServiceException as exc:
+            logger.warning("xtdata probe failed: {}", exc.message)
+            self._mark_xtdata_stalled("probe", self._probe_timeout_seconds())
+            reconnected = self._attempt_reconnect()
+            return {
+                "healthy": reconnected,
+                "status": "reconnecting" if reconnected else "stale",
+                "action": "reconnect",
+                "reason": exc.message,
+            }
 
     def get_kline_history(self, query: KlineHistoryQuery) -> list[dict[str, Any]]:
         if self._is_mock_mode():
@@ -455,6 +524,62 @@ class XtDataGateway:
             )
         return items
 
+    def _query_timeout_seconds(self) -> float:
+        return max(float(self.settings.xtquant.data.query_timeout_seconds), 0.01)
+
+    def _download_timeout_seconds(self) -> float:
+        return max(float(self.settings.xtquant.data.download_timeout_seconds), 0.01)
+
+    def _mark_xtdata_stalled(self, operation: str, timeout_seconds: float) -> None:
+        logger.error(
+            "xtdata {} timed out after {:.1f}s; marking connection stale for reconnect",
+            operation,
+            timeout_seconds,
+        )
+        with self._connect_lock:
+            self._initialized = False
+            self._last_connect_error = f"{operation} timed out after {timeout_seconds:.1f}s"
+            self._last_connect_failure_at = time.monotonic()
+
+    def _run_xtdata_call(
+        self,
+        *,
+        operation: str,
+        timeout_seconds: float,
+        func: Callable[[], _T],
+    ) -> _T:
+        if timeout_seconds <= 0:
+            return func()
+
+        result: dict[str, _T] = {}
+        error: dict[str, BaseException] = {}
+
+        def worker() -> None:
+            try:
+                result["value"] = func()
+            except BaseException as exc:
+                error["exc"] = exc
+
+        thread = threading.Thread(target=worker, daemon=True, name=f"xtdata-{operation}")
+        thread.start()
+        thread.join(timeout=timeout_seconds)
+        if thread.is_alive():
+            self._mark_xtdata_stalled(operation, timeout_seconds)
+            raise DataServiceException(
+                f"xtdata {operation} timed out after {timeout_seconds:.1f}s; "
+                "try a smaller date range, fewer symbols, or auto_download=false",
+                error_code="XTDATA_TIMEOUT",
+            )
+        if "exc" in error:
+            raise error["exc"]
+        if "value" not in result:
+            self._mark_xtdata_stalled(operation, timeout_seconds)
+            raise DataServiceException(
+                f"xtdata {operation} returned no result",
+                error_code="XTDATA_TIMEOUT",
+            )
+        return result["value"]
+
     def _get_market_data(
         self,
         *,
@@ -466,15 +591,25 @@ class XtDataGateway:
         adjust_type: str,
         fill_data: bool,
     ) -> Any:
-        return xtdata.get_market_data(
-            field_list=fields,
-            stock_list=symbols,
-            period=period,
-            start_time=start_time,
-            end_time=end_time,
-            count=-1,
-            dividend_type=adjust_type,
-            fill_data=fill_data,
+        operation = f"get_market_data period={period} symbols={len(symbols)}"
+
+        def call() -> Any:
+            with _XTDATA_QUERY_LOCK:
+                return xtdata.get_market_data(
+                    field_list=fields,
+                    stock_list=symbols,
+                    period=period,
+                    start_time=start_time,
+                    end_time=end_time,
+                    count=-1,
+                    dividend_type=adjust_type,
+                    fill_data=fill_data,
+                )
+
+        return self._run_xtdata_call(
+            operation=operation,
+            timeout_seconds=self._query_timeout_seconds(),
+            func=call,
         )
 
     def _should_download_kline_history(self, raw: Any, symbols: list[str]) -> bool:
@@ -514,28 +649,40 @@ class XtDataGateway:
         end_time: str,
     ) -> None:
         logger.info(
-            "xtdata downloading history: symbols=%s, period=%s, start_time=%s, end_time=%s",
+            "xtdata downloading history: symbols={}, period={}, start_time={}, end_time={}",
             symbols,
             period,
             start_time,
             end_time,
         )
+        operation = f"download_history period={period} symbols={len(symbols)}"
+
+        def call() -> None:
+            with _XTDATA_DOWNLOAD_LOCK:
+                if hasattr(xtdata, "download_history_data2"):
+                    xtdata.download_history_data2(
+                        symbols,
+                        period,
+                        start_time=start_time,
+                        end_time=end_time,
+                    )
+                    return
+                for symbol in symbols:
+                    xtdata.download_history_data(
+                        symbol,
+                        period,
+                        start_time=start_time,
+                        end_time=end_time,
+                    )
+
         try:
-            if hasattr(xtdata, "download_history_data2"):
-                xtdata.download_history_data2(
-                    symbols,
-                    period,
-                    start_time=start_time,
-                    end_time=end_time,
-                )
-                return
-            for symbol in symbols:
-                xtdata.download_history_data(
-                    symbol,
-                    period,
-                    start_time=start_time,
-                    end_time=end_time,
-                )
+            self._run_xtdata_call(
+                operation=operation,
+                timeout_seconds=self._download_timeout_seconds(),
+                func=call,
+            )
+        except DataServiceException:
+            raise
         except Exception as exc:
             logger.warning(f"xtdata history download failed: {exc}")
 
