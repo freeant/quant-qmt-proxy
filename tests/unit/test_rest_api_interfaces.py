@@ -276,6 +276,8 @@ def test_rest_trading_order_and_cancel_interfaces(
         order_data = order_payload["data"]
         assert order_data["stock_code"] == xt_default_symbols[0]
         assert order_data["order_id"]
+        assert order_data["strategy_name"] == "pytest"
+        assert order_data["order_remark"] == "rest-order"
 
         cancel_by_order_data = _request_json(
             rest_test_context,

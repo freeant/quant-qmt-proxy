@@ -9,6 +9,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 from app.config import Settings, _normalize_app_servers, get_settings
 from app.grpc_server import create_grpc_server, serve as serve_grpc
+from app.services.process_health import ensure_heartbeat_loop
 from app.utils.logger import configure_logging_from_settings, logger
 
 
@@ -43,6 +44,7 @@ def print_banner(settings: Settings) -> None:
 
 
 def main() -> None:
+    ensure_heartbeat_loop()
     settings = get_settings()
     settings.app_servers = _normalize_app_servers(settings.app_servers)
     configure_logging_from_settings(settings)

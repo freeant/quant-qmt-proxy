@@ -97,6 +97,22 @@ python start.py --servers all
 
 仓库在 push / PR 时会通过 GitHub Actions（`.github/workflows/tests.yml`）自动执行同样的 mock 测试。
 
+## 生产部署与自动重启
+
+`dev/prod` 长期运行时，建议用 **NSSM Windows 服务**（崩溃自动拉起）+ **watchdog 脚本**（僵死探测后重启）。
+
+```powershell
+# 管理员 PowerShell，项目根目录
+.\scripts\install-service.ps1 -Action Install
+
+# 另开终端长期运行
+.\scripts\watchdog.ps1
+```
+
+`/health/live` 现返回 `pid`、`uptime_seconds`、`heartbeat_age_seconds` 等字段，供 watchdog 判断进程是否僵死。**不要用** `/health/ready` 触发重启（QMT 未连时会 503，但进程本身可能正常）。
+
+完整说明见 **[运维文档](docs/operations.md)**。
+
 ## 环境配置
 
 配置文件按用途分为三类：
@@ -232,7 +248,11 @@ copy config.test.local.example.yml config.test.local.yml
 
 ## 接口概览
 
-完整请求/响应说明见 **[API 参考](docs/api-reference.md)**。启动 REST 后也可使用交互式文档：**Swagger UI** `/docs`、**ReDoc** `/redoc`。
+完整请求/响应说明见 **[API 参考](docs/api-reference.md)**。启动 REST 后也可使用**在线交互文档**（由 FastAPI 根据代码自动生成，与实现保持同步）：
+
+- **Swagger UI**：`http://localhost:8000/docs`
+- **ReDoc**：`http://localhost:8000/redoc`
+- **OpenAPI JSON**：`http://localhost:8000/openapi.json`
 
 ### REST
 
@@ -263,22 +283,23 @@ copy config.test.local.example.yml config.test.local.yml
 - `DELETE /api/v1/trading/sessions/{session_id}`
 - `GET /api/v1/trading/sessions/{session_id}/asset`
 - `GET /api/v1/trading/sessions/{session_id}/positions`
-- `GET /api/v1/trading/sessions/{session_id}/orders`
+- `GET /api/v1/trading/sessions/{session_id}/orders` — 支持 `cancelable_only`、`strategy_name` 查询
 - `GET /api/v1/trading/sessions/{session_id}/trades`
-- `POST /api/v1/trading/sessions/{session_id}/orders`
+- `POST /api/v1/trading/sessions/{session_id}/orders` — 请求体支持 `strategy_name`、`order_remark`
 - `POST /api/v1/trading/sessions/{session_id}/cancel`
 
 健康接口：
 
 - `GET /`
 - `GET /health/`
-- `GET /health/ready` — `mock` 恒为 200；`dev/prod` 在 xtdata 未连接时返回 **503**
+- `GET /health/ready` — `mock` 恒为 200；`dev/prod` 在 QMT（xtdata/xttrader）未就绪时返回 **503**
 - `GET /health/live`
 
 查询参数补充：
 
 - `GET /api/v1/data/instrument/{symbol}?complete=false`
-- `GET /api/v1/trading/sessions/{session_id}/orders?cancelable_only=false`
+- `GET /api/v1/trading/sessions/{session_id}/orders?cancelable_only=false&strategy_name=my_strategy`
+- `POST /api/v1/trading/sessions/{session_id}/orders` 请求体可含 `"strategy_name": "my_strategy"`
 
 ### gRPC
 

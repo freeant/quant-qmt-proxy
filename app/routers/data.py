@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from starlette.concurrency import run_in_threadpool
 
 from app.dependencies import (
     get_market_data_service,
@@ -43,7 +44,8 @@ async def get_kline_history(
     market_data_service: MarketDataService = Depends(get_market_data_service),
 ):
     try:
-        items = market_data_service.get_kline_history(
+        items = await run_in_threadpool(
+            market_data_service.get_kline_history,
             KlineHistoryQuery(
                 symbols=request.symbols,
                 period=request.period,
@@ -52,7 +54,8 @@ async def get_kline_history(
                 fields=request.fields,
                 adjust_type=request.adjust_type,
                 fill_data=request.fill_data,
-            )
+                auto_download=request.auto_download,
+            ),
         )
         return format_response(data={"items": items}, message="获取 K 线历史成功")
     except DataServiceException as exc:
@@ -66,14 +69,16 @@ async def get_tick_history(
     market_data_service: MarketDataService = Depends(get_market_data_service),
 ):
     try:
-        items = market_data_service.get_tick_history(
+        items = await run_in_threadpool(
+            market_data_service.get_tick_history,
             TickHistoryQuery(
                 symbols=request.symbols,
                 start_time=request.start_time,
                 end_time=request.end_time,
                 fields=request.fields,
                 adjust_type=request.adjust_type,
-            )
+                auto_download=request.auto_download,
+            ),
         )
         return format_response(data={"items": items}, message="获取 Tick 历史成功")
     except DataServiceException as exc:
@@ -87,7 +92,7 @@ async def get_full_tick_snapshot(
     market_data_service: MarketDataService = Depends(get_market_data_service),
 ):
     try:
-        items = market_data_service.get_full_tick_snapshot(request.symbols)
+        items = await run_in_threadpool(market_data_service.get_full_tick_snapshot, request.symbols)
         return format_response(data={"items": items}, message="获取全量 Tick 快照成功")
     except DataServiceException as exc:
         raise handle_xtquant_exception(exc)

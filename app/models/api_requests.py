@@ -14,7 +14,7 @@ class SubmitStockOrderRequestModel(BaseModel):
     price_type: int = Field(..., description="xtquant 价格类型")
     volume: int = Field(..., description="委托数量")
     price: float = Field(0.0, description="委托价格")
-    strategy_name: str = Field("", description="策略名称")
+    strategy_name: str = Field("", description="策略名称，会传给 QMT 并在订单回报中返回")
     order_remark: str = Field("", description="委托备注")
 
     @field_validator("side")
@@ -50,6 +50,7 @@ class KlineHistoryRequestModel(BaseModel):
     fields: list[str] = Field(default_factory=list, description="额外字段")
     adjust_type: str = Field("none", description="复权类型")
     fill_data: bool = Field(True, description="是否填充缺失数据")
+    auto_download: bool = Field(True, description="本地无缓存时是否自动从 QMT 下载历史数据")
 
 
 class TickHistoryRequestModel(BaseModel):
@@ -58,6 +59,7 @@ class TickHistoryRequestModel(BaseModel):
     end_time: str = Field("", description="结束时间")
     fields: list[str] = Field(default_factory=list, description="额外字段")
     adjust_type: str = Field("none", description="复权类型")
+    auto_download: bool = Field(True, description="本地无缓存时是否自动从 QMT 下载历史数据")
 
 
 class FinancialDataRequestModel(BaseModel):

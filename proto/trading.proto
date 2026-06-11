@@ -107,6 +107,7 @@ message GetStockPositionsResponse {
 message GetStockOrdersRequest {
   string session_id = 1;
   bool cancelable_only = 2;
+  string strategy_name = 3;
 }
 
 message StockOrder {

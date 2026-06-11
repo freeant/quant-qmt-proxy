@@ -177,12 +177,14 @@ class GetStockPositionsResponse(_message.Message):
     def __init__(self, positions: _Optional[_Iterable[_Union[StockPosition, _Mapping]]] = ..., status: _Optional[_Union[_common_pb2.Status, _Mapping]] = ...) -> None: ...
 
 class GetStockOrdersRequest(_message.Message):
-    __slots__ = ("session_id", "cancelable_only")
+    __slots__ = ("session_id", "cancelable_only", "strategy_name")
     SESSION_ID_FIELD_NUMBER: _ClassVar[int]
     CANCELABLE_ONLY_FIELD_NUMBER: _ClassVar[int]
+    STRATEGY_NAME_FIELD_NUMBER: _ClassVar[int]
     session_id: str
     cancelable_only: bool
-    def __init__(self, session_id: _Optional[str] = ..., cancelable_only: bool = ...) -> None: ...
+    strategy_name: str
+    def __init__(self, session_id: _Optional[str] = ..., cancelable_only: bool = ..., strategy_name: _Optional[str] = ...) -> None: ...
 
 class StockOrder(_message.Message):
     __slots__ = ("account_id", "stock_code", "instrument_name", "order_id", "order_sysid", "order_time_ms", "order_type", "order_volume", "price_type", "price", "traded_volume", "traded_price", "order_status_code", "status_msg", "strategy_name", "order_remark", "direction", "offset_flag", "secu_account")

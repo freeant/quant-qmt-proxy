@@ -1,9 +1,28 @@
 """
 辅助函数模块
 """
+import math
 from datetime import date, datetime
 from decimal import Decimal
 from typing import Any, Dict, List, Optional
+
+
+def sanitize_json_value(value: Any) -> Any:
+    """Make values safe for standard JSON encoding (NaN/Inf -> null)."""
+    if isinstance(value, float):
+        if math.isnan(value) or math.isinf(value):
+            return None
+        return value
+    if isinstance(value, dict):
+        return {key: sanitize_json_value(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [sanitize_json_value(item) for item in value]
+    if hasattr(value, "item") and not isinstance(value, (str, bytes, dict)):
+        try:
+            return sanitize_json_value(value.item())
+        except Exception:
+            return value
+    return value
 
 
 def format_response(
@@ -21,7 +40,7 @@ def format_response(
     }
     
     if data is not None:
-        response["data"] = data
+        response["data"] = sanitize_json_value(data)
     
     return response
 
@@ -31,13 +50,13 @@ def serialize_data(data: Any) -> Any:
     if isinstance(data, (datetime, date)):
         return data.isoformat()
     elif isinstance(data, Decimal):
-        return float(data)
+        return sanitize_json_value(float(data))
     elif isinstance(data, dict):
         return {k: serialize_data(v) for k, v in data.items()}
     elif isinstance(data, (list, tuple)):
         return [serialize_data(item) for item in data]
     else:
-        return data
+        return sanitize_json_value(data)
 
 
 def validate_stock_code(stock_code: str) -> bool:

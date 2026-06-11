@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 
 from app.dependencies import get_trading_session_manager, verify_api_key
 from app.models.api_requests import (
@@ -100,13 +100,23 @@ async def get_stock_positions(
 @router.get("/sessions/{session_id}/orders")
 async def get_stock_orders(
     session_id: str,
-    cancelable_only: bool = False,
+    cancelable_only: bool = Query(False, description="仅返回可撤委托"),
+    strategy_name: str | None = Query(
+        None,
+        description="按策略名精确过滤；不传则返回全部订单",
+    ),
     api_key: str | None = Depends(verify_api_key),
     trading_manager: TradingSessionManager = Depends(get_trading_session_manager),
 ):
     try:
         return format_response(
-            data={"items": trading_manager.get_stock_orders(session_id, cancelable_only=cancelable_only)},
+            data={
+                "items": trading_manager.get_stock_orders(
+                    session_id,
+                    cancelable_only=cancelable_only,
+                    strategy_name=strategy_name,
+                )
+            },
             message="获取订单成功",
         )
     except TradingServiceException as exc:

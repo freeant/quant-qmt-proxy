@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import os
 import threading
 import time
@@ -62,7 +63,7 @@ CONNECT_RETRY_COOLDOWN_SECONDS = 5.0
 def normalize_scalar(value: Any) -> Any:
     if hasattr(value, "item"):
         try:
-            return value.item()
+            value = value.item()
         except Exception:
             pass
     if hasattr(value, "tolist") and not isinstance(value, (str, bytes, dict)):
@@ -71,6 +72,32 @@ def normalize_scalar(value: Any) -> Any:
         except Exception:
             pass
     return value
+
+
+def json_safe_float(value: Any, default: float = 0.0) -> float | None:
+    normalized = normalize_scalar(value)
+    if normalized in (None, ""):
+        return default
+    try:
+        number = float(normalized)
+    except (TypeError, ValueError):
+        return default
+    if not math.isfinite(number):
+        return None
+    return number
+
+
+def json_safe_int(value: Any, default: int = 0) -> int:
+    normalized = normalize_scalar(value)
+    if normalized in (None, ""):
+        return default
+    try:
+        number = float(normalized)
+        if not math.isfinite(number):
+            return default
+        return int(number)
+    except (TypeError, ValueError):
+        return default
 
 
 def to_epoch_ms(value: Any) -> int:
@@ -225,33 +252,65 @@ class XtDataGateway:
         if self._is_mock_mode():
             return self._mock_kline_history(query)
         self.ensure_ready()
-        raw = xtdata.get_market_data(
-            field_list=query.fields,
-            stock_list=query.symbols,
+        field_list = query.fields or KLINE_FIELDS
+        raw = self._get_market_data(
+            symbols=query.symbols,
             period=query.period,
             start_time=query.start_time,
             end_time=query.end_time,
-            count=-1,
-            dividend_type=query.adjust_type,
+            fields=field_list,
+            adjust_type=query.adjust_type,
             fill_data=query.fill_data,
         )
-        return self._format_kline_history(raw, query.symbols, query.fields)
+        if query.auto_download and self._should_download_kline_history(raw, query.symbols):
+            self._download_history_data(
+                query.symbols,
+                query.period,
+                query.start_time,
+                query.end_time,
+            )
+            raw = self._get_market_data(
+                symbols=query.symbols,
+                period=query.period,
+                start_time=query.start_time,
+                end_time=query.end_time,
+                fields=field_list,
+                adjust_type=query.adjust_type,
+                fill_data=query.fill_data,
+            )
+        return self._format_kline_history(raw, query.symbols, field_list)
 
     def get_tick_history(self, query: TickHistoryQuery) -> list[dict[str, Any]]:
         if self._is_mock_mode():
             return self._mock_tick_history(query.symbols)
         self.ensure_ready()
-        raw = xtdata.get_market_data(
-            field_list=query.fields,
-            stock_list=query.symbols,
+        field_list = query.fields or TICK_FIELDS
+        raw = self._get_market_data(
+            symbols=query.symbols,
             period="tick",
             start_time=query.start_time,
             end_time=query.end_time,
-            count=-1,
-            dividend_type=query.adjust_type,
+            fields=field_list,
+            adjust_type=query.adjust_type,
             fill_data=False,
         )
-        return self._format_tick_history(raw, query.symbols, query.fields)
+        if query.auto_download and self._should_download_tick_history(raw, query.symbols):
+            self._download_history_data(
+                query.symbols,
+                "tick",
+                query.start_time,
+                query.end_time,
+            )
+            raw = self._get_market_data(
+                symbols=query.symbols,
+                period="tick",
+                start_time=query.start_time,
+                end_time=query.end_time,
+                fields=field_list,
+                adjust_type=query.adjust_type,
+                fill_data=False,
+            )
+        return self._format_tick_history(raw, query.symbols, field_list)
 
     def get_full_tick_snapshot(self, symbols: list[str]) -> list[dict[str, Any]]:
         if self._is_mock_mode():
@@ -396,6 +455,90 @@ class XtDataGateway:
             )
         return items
 
+    def _get_market_data(
+        self,
+        *,
+        symbols: list[str],
+        period: str,
+        start_time: str,
+        end_time: str,
+        fields: list[str],
+        adjust_type: str,
+        fill_data: bool,
+    ) -> Any:
+        return xtdata.get_market_data(
+            field_list=fields,
+            stock_list=symbols,
+            period=period,
+            start_time=start_time,
+            end_time=end_time,
+            count=-1,
+            dividend_type=adjust_type,
+            fill_data=fill_data,
+        )
+
+    def _should_download_kline_history(self, raw: Any, symbols: list[str]) -> bool:
+        if not isinstance(raw, dict) or not raw:
+            return True
+        try:
+            first_frame = next(iter(raw.values()))
+        except StopIteration:
+            return True
+        columns = list(getattr(first_frame, "columns", []))
+        if not columns:
+            return True
+        if hasattr(first_frame, "index"):
+            return any(symbol not in first_frame.index for symbol in symbols)
+        return False
+
+    def _should_download_tick_history(self, raw: Any, symbols: list[str]) -> bool:
+        if not isinstance(raw, dict) or not raw:
+            return True
+        for symbol in symbols:
+            rows = raw.get(symbol)
+            if rows is None:
+                return True
+            if hasattr(rows, "__len__"):
+                try:
+                    if len(rows) == 0:
+                        return True
+                except TypeError:
+                    pass
+        return False
+
+    def _download_history_data(
+        self,
+        symbols: list[str],
+        period: str,
+        start_time: str,
+        end_time: str,
+    ) -> None:
+        logger.info(
+            "xtdata downloading history: symbols=%s, period=%s, start_time=%s, end_time=%s",
+            symbols,
+            period,
+            start_time,
+            end_time,
+        )
+        try:
+            if hasattr(xtdata, "download_history_data2"):
+                xtdata.download_history_data2(
+                    symbols,
+                    period,
+                    start_time=start_time,
+                    end_time=end_time,
+                )
+                return
+            for symbol in symbols:
+                xtdata.download_history_data(
+                    symbol,
+                    period,
+                    start_time=start_time,
+                    end_time=end_time,
+                )
+        except Exception as exc:
+            logger.warning(f"xtdata history download failed: {exc}")
+
     def _format_kline_history(
         self,
         data: Any,
@@ -423,9 +566,10 @@ class XtDataGateway:
                     normalized = normalize_scalar(value)
                     key = self._snake_case_field(field)
                     if key in {"volume", "open_interest", "suspend_flag"}:
-                        bar[key] = int(normalized or 0)
+                        bar[key] = json_safe_int(normalized, default=0)
                     else:
-                        bar[key] = float(normalized or 0.0)
+                        safe_value = json_safe_float(normalized, default=0.0)
+                        bar[key] = safe_value if safe_value is not None else None
                 bars.append(bar)
             result.append({"symbol": symbol, "fields": requested_fields or KLINE_FIELDS, "bars": bars})
         return result
@@ -471,31 +615,34 @@ class XtDataGateway:
             payload = dict(payload)
         return {
             "time_ms": to_epoch_ms(payload.get("time")),
-            "last_price": float(normalize_scalar(payload.get("lastPrice", payload.get("last_price", 0.0))) or 0.0),
-            "open": float(normalize_scalar(payload.get("open", 0.0)) or 0.0),
-            "high": float(normalize_scalar(payload.get("high", 0.0)) or 0.0),
-            "low": float(normalize_scalar(payload.get("low", 0.0)) or 0.0),
-            "last_close": float(normalize_scalar(payload.get("lastClose", payload.get("last_close", 0.0))) or 0.0),
-            "amount": float(normalize_scalar(payload.get("amount", 0.0)) or 0.0),
-            "volume": int(normalize_scalar(payload.get("volume", 0)) or 0),
-            "pvolume": int(normalize_scalar(payload.get("pvolume", 0)) or 0),
-            "open_int": int(normalize_scalar(payload.get("openInt", payload.get("open_int", 0))) or 0),
-            "stock_status": int(normalize_scalar(payload.get("stockStatus", payload.get("stock_status", 0))) or 0),
-            "last_settlement_price": float(
-                normalize_scalar(payload.get("lastSettlementPrice", payload.get("last_settlement_price", 0.0))) or 0.0
-            ),
+            "last_price": json_safe_float(payload.get("lastPrice", payload.get("last_price", 0.0)), default=0.0) or 0.0,
+            "open": json_safe_float(payload.get("open", 0.0), default=0.0) or 0.0,
+            "high": json_safe_float(payload.get("high", 0.0), default=0.0) or 0.0,
+            "low": json_safe_float(payload.get("low", 0.0), default=0.0) or 0.0,
+            "last_close": json_safe_float(payload.get("lastClose", payload.get("last_close", 0.0)), default=0.0) or 0.0,
+            "amount": json_safe_float(payload.get("amount", 0.0), default=0.0) or 0.0,
+            "volume": json_safe_int(payload.get("volume", 0), default=0),
+            "pvolume": json_safe_int(payload.get("pvolume", 0), default=0),
+            "open_int": json_safe_int(payload.get("openInt", payload.get("open_int", 0)), default=0),
+            "stock_status": json_safe_int(payload.get("stockStatus", payload.get("stock_status", 0)), default=0),
+            "last_settlement_price": json_safe_float(
+                payload.get("lastSettlementPrice", payload.get("last_settlement_price", 0.0)),
+                default=0.0,
+            )
+            or 0.0,
             "ask_price": [
-                float(normalize_scalar(item) or 0.0)
+                json_safe_float(item, default=0.0) or 0.0
                 for item in payload.get("askPrice", payload.get("ask_price", []))
             ],
             "bid_price": [
-                float(normalize_scalar(item) or 0.0)
+                json_safe_float(item, default=0.0) or 0.0
                 for item in payload.get("bidPrice", payload.get("bid_price", []))
             ],
-            "ask_vol": [int(normalize_scalar(item) or 0) for item in payload.get("askVol", payload.get("ask_vol", []))],
-            "bid_vol": [int(normalize_scalar(item) or 0) for item in payload.get("bidVol", payload.get("bid_vol", []))],
-            "transaction_num": int(
-                normalize_scalar(payload.get("transactionNum", payload.get("transaction_num", 0))) or 0
+            "ask_vol": [json_safe_int(item, default=0) for item in payload.get("askVol", payload.get("ask_vol", []))],
+            "bid_vol": [json_safe_int(item, default=0) for item in payload.get("bidVol", payload.get("bid_vol", []))],
+            "transaction_num": json_safe_int(
+                payload.get("transactionNum", payload.get("transaction_num", 0)),
+                default=0,
             ),
         }
 

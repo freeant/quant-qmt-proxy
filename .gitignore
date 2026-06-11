@@ -23,6 +23,9 @@ share/python-wheels/
 *.egg
 MANIFEST
 
+# Local tooling
+tools/nssm/
+
 # Virtual Environment
 .venv/
 venv/

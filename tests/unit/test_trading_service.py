@@ -332,6 +332,62 @@ def test_cancel_by_sysid_rejects_invalid_market(monkeypatch):
     assert exc.value.error_code == "INVALID_MARKET"
 
 
+def test_mock_submit_order_persists_strategy_name():
+    manager = TradingSessionManager(build_settings("mock"), TradingEventHub())
+    session = manager.open_session(OpenSessionCommand(account_id="mock-account"))
+
+    order = manager.submit_stock_order(
+        SubmitStockOrderCommand(
+            session_id=session["session_id"],
+            stock_code="000001.SZ",
+            side=23,
+            price_type=11,
+            volume=100,
+            price=10.5,
+            strategy_name="alpha",
+            order_remark="remark-a",
+        )
+    )
+
+    assert order["strategy_name"] == "alpha"
+    assert order["order_remark"] == "remark-a"
+
+
+def test_mock_get_stock_orders_filters_by_strategy_name():
+    manager = TradingSessionManager(build_settings("mock"), TradingEventHub())
+    session = manager.open_session(OpenSessionCommand(account_id="mock-account"))
+    session_id = session["session_id"]
+
+    manager.submit_stock_order(
+        SubmitStockOrderCommand(
+            session_id=session_id,
+            stock_code="000001.SZ",
+            side=23,
+            price_type=11,
+            volume=100,
+            strategy_name="alpha",
+        )
+    )
+    manager.submit_stock_order(
+        SubmitStockOrderCommand(
+            session_id=session_id,
+            stock_code="000002.SZ",
+            side=24,
+            price_type=11,
+            volume=200,
+            strategy_name="beta",
+        )
+    )
+
+    all_orders = manager.get_stock_orders(session_id)
+    assert len(all_orders) == 2
+
+    alpha_orders = manager.get_stock_orders(session_id, strategy_name="alpha")
+    assert len(alpha_orders) == 1
+    assert alpha_orders[0]["strategy_name"] == "alpha"
+    assert alpha_orders[0]["stock_code"] == "000001.SZ"
+
+
 def test_mock_order_publishes_stream_event():
     hub = TradingEventHub()
     manager = TradingSessionManager(build_settings("mock"), hub)

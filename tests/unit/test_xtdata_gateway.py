@@ -119,6 +119,156 @@ def test_l2_helpers_accept_empty_array_payloads(monkeypatch):
     ]
 
 
+def _build_kline_raw(symbols: list[str], *, columns: list[str] | None = None) -> dict:
+    import pandas as pd
+
+    frame = pd.DataFrame(index=symbols, columns=columns or [])
+    return {"time": frame, "close": frame.copy()}
+
+
+def _build_tick_raw(symbols: list[str], *, empty: bool = True) -> dict:
+    import numpy as np
+
+    if empty:
+        return {symbol: np.array([]) for symbol in symbols}
+    dtype = [("time", "i8"), ("lastPrice", "f8")]
+    return {symbols[0]: np.array([(1, 10.0)], dtype=dtype)}
+
+
+def test_kline_history_auto_downloads_when_local_cache_is_empty(monkeypatch):
+    monkeypatch.setattr(XtDataGateway, "_try_initialize", lambda self: setattr(self, "_initialized", True))
+    gateway = XtDataGateway(build_settings("dev"))
+    download_calls: list[tuple] = []
+    get_calls = {"count": 0}
+
+    class DummyXtData:
+        @staticmethod
+        def get_market_data(**kwargs):
+            get_calls["count"] += 1
+            if get_calls["count"] == 1:
+                return _build_kline_raw(kwargs["stock_list"], columns=[])
+            return _build_kline_raw(kwargs["stock_list"], columns=["20240102"])
+
+        @staticmethod
+        def download_history_data2(symbols, period, start_time="", end_time=""):
+            download_calls.append((symbols, period, start_time, end_time))
+
+    monkeypatch.setattr(xtdata_gateway_module, "xtdata", DummyXtData())
+
+    items = gateway.get_kline_history(
+        KlineHistoryQuery(
+            symbols=["000001.SZ"],
+            period="1d",
+            start_time="20240101",
+            end_time="20240102",
+        )
+    )
+
+    assert download_calls == [(["000001.SZ"], "1d", "20240101", "20240102")]
+    assert get_calls["count"] == 2
+    assert len(items[0]["bars"]) == 1
+
+
+def test_kline_history_skips_download_when_auto_download_disabled(monkeypatch):
+    monkeypatch.setattr(XtDataGateway, "_try_initialize", lambda self: setattr(self, "_initialized", True))
+    gateway = XtDataGateway(build_settings("dev"))
+
+    class DummyXtData:
+        @staticmethod
+        def get_market_data(**kwargs):
+            return _build_kline_raw(kwargs["stock_list"], columns=[])
+
+        @staticmethod
+        def download_history_data2(*args, **kwargs):
+            raise AssertionError("download should not be called when auto_download is false")
+
+    monkeypatch.setattr(xtdata_gateway_module, "xtdata", DummyXtData())
+
+    items = gateway.get_kline_history(
+        KlineHistoryQuery(
+            symbols=["000001.SZ"],
+            period="1d",
+            auto_download=False,
+        )
+    )
+
+    assert items[0]["bars"] == []
+
+
+def test_tick_history_auto_downloads_when_local_cache_is_empty(monkeypatch):
+    monkeypatch.setattr(XtDataGateway, "_try_initialize", lambda self: setattr(self, "_initialized", True))
+    gateway = XtDataGateway(build_settings("dev"))
+    download_calls: list[tuple] = []
+    get_calls = {"count": 0}
+
+    class DummyXtData:
+        @staticmethod
+        def get_market_data(**kwargs):
+            get_calls["count"] += 1
+            if get_calls["count"] == 1:
+                return _build_tick_raw(kwargs["stock_list"], empty=True)
+            return _build_tick_raw(kwargs["stock_list"], empty=False)
+
+        @staticmethod
+        def download_history_data2(symbols, period, start_time="", end_time=""):
+            download_calls.append((symbols, period, start_time, end_time))
+
+    monkeypatch.setattr(xtdata_gateway_module, "xtdata", DummyXtData())
+
+    items = gateway.get_tick_history(
+        TickHistoryQuery(
+            symbols=["000001.SZ"],
+            start_time="20240101093000",
+            end_time="20240101093500",
+        )
+    )
+
+    assert download_calls == [(["000001.SZ"], "tick", "20240101093000", "20240101093500")]
+    assert get_calls["count"] == 2
+    assert items[0]["ticks"]
+
+
+def test_kline_history_sanitizes_non_finite_values(monkeypatch):
+    monkeypatch.setattr(XtDataGateway, "_try_initialize", lambda self: setattr(self, "_initialized", True))
+    gateway = XtDataGateway(build_settings("dev"))
+
+    class DummyXtData:
+        @staticmethod
+        def get_market_data(**kwargs):
+            import pandas as pd
+
+            symbol = kwargs["stock_list"][0]
+            columns = ["20240102"]
+            return {
+                "open": pd.DataFrame([[float("nan")]], index=[symbol], columns=columns),
+                "high": pd.DataFrame([[float("inf")]], index=[symbol], columns=columns),
+                "low": pd.DataFrame([[float("-inf")]], index=[symbol], columns=columns),
+                "close": pd.DataFrame([[10.5]], index=[symbol], columns=columns),
+                "volume": pd.DataFrame([[100]], index=[symbol], columns=columns),
+                "amount": pd.DataFrame([[1000.0]], index=[symbol], columns=columns),
+                "settle": pd.DataFrame([[0.0]], index=[symbol], columns=columns),
+                "openInterest": pd.DataFrame([[0]], index=[symbol], columns=columns),
+                "preClose": pd.DataFrame([[0.0]], index=[symbol], columns=columns),
+                "suspendFlag": pd.DataFrame([[0]], index=[symbol], columns=columns),
+            }
+
+    monkeypatch.setattr(xtdata_gateway_module, "xtdata", DummyXtData())
+
+    items = gateway.get_kline_history(
+        KlineHistoryQuery(
+            symbols=["000001.SZ"],
+            period="1d",
+            auto_download=False,
+        )
+    )
+
+    bar = items[0]["bars"][0]
+    assert bar["open"] is None
+    assert bar["high"] is None
+    assert bar["low"] is None
+    assert bar["close"] == 10.5
+
+
 def test_trading_calendar_unsupported_maps_to_feature_not_supported(monkeypatch):
     monkeypatch.setattr(XtDataGateway, "_try_initialize", lambda self: setattr(self, "_initialized", True))
     gateway = XtDataGateway(build_settings("dev"))

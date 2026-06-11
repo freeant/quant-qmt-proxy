@@ -84,6 +84,7 @@ class TradingGrpcService(trading_pb2_grpc.TradingServiceServicer):
             orders = self.trading_manager.get_stock_orders(
                 request.session_id,
                 cancelable_only=request.cancelable_only,
+                strategy_name=request.strategy_name or None,
             )
             return trading_pb2.GetStockOrdersResponse(
                 orders=[self._to_stock_order(item) for item in orders],

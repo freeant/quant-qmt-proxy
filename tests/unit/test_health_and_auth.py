@@ -22,12 +22,38 @@ def test_rest_health_endpoints(rest_test_context: RestTestContext, path: str):
     assert payload["success"] is True
 
 
-def test_readiness_includes_xtdata_checks(rest_test_context: RestTestContext):
+def test_liveness_includes_heartbeat_fields(rest_test_context: RestTestContext):
+    response = rest_test_context.client.get("/health/live")
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    data = payload["data"]
+    assert data["status"] == "alive"
+    assert isinstance(data["pid"], int)
+    assert data["pid"] > 0
+    assert isinstance(data["started_at_ms"], int)
+    assert isinstance(data["last_heartbeat_ms"], int)
+    assert isinstance(data["uptime_seconds"], (int, float))
+    assert isinstance(data["heartbeat_age_seconds"], (int, float))
+    assert data["heartbeat_age_seconds"] >= 0
+
+
+def test_health_includes_qmt_status(rest_test_context: RestTestContext):
+    response = rest_test_context.client.get("/health/")
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    assert payload["success"] is True
+    assert payload["data"]["qmt"]["status"] == "mock"
+    assert payload["data"]["qmt"]["xtdata"]["status"] == "mock"
+    assert payload["data"]["qmt"]["xttrader"]["status"] == "mock"
+
+
+def test_readiness_includes_qmt_checks(rest_test_context: RestTestContext):
     response = rest_test_context.client.get("/health/ready")
     assert response.status_code == 200, response.text
     payload = response.json()
     assert payload["data"]["status"] == "ready"
-    assert payload["data"]["checks"]["xtdata"]["status"] == "mock"
+    assert payload["data"]["checks"]["qmt"]["status"] == "mock"
+    assert payload["data"]["checks"]["qmt"]["xtdata"]["status"] == "mock"
 
 
 def test_readiness_returns_503_when_xtdata_not_connected():
@@ -61,7 +87,8 @@ def test_readiness_returns_503_when_xtdata_not_connected():
         payload = response.json()
         assert payload["success"] is False
         assert payload["data"]["status"] == "not_ready"
-        assert payload["data"]["checks"]["xtdata"]["ready"] is False
+        assert payload["data"]["checks"]["qmt"]["ready"] is False
+        assert payload["data"]["checks"]["qmt"]["xtdata"]["ready"] is False
     finally:
         reloaded.app.dependency_overrides.clear()
 

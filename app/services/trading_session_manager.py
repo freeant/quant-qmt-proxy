@@ -215,15 +215,24 @@ class TradingSessionManager:
             return [self._convert_position(item) for item in positions]
         return [self._mock_position(session.account_id)]
 
-    def get_stock_orders(self, session_id: str, cancelable_only: bool = False) -> list[dict[str, Any]]:
+    def get_stock_orders(
+        self,
+        session_id: str,
+        cancelable_only: bool = False,
+        strategy_name: str | None = None,
+    ) -> list[dict[str, Any]]:
         session = self._get_session(session_id)
         if session.gateway:
             orders = [self._convert_order(item) for item in (session.gateway.query_stock_orders(cancelable_only) or [])]
             with self._lock:
                 session.orders = {order["order_id"]: order for order in orders}
-            return orders
-        with self._lock:
-            return list(session.orders.values())
+        else:
+            with self._lock:
+                orders = list(session.orders.values())
+        if strategy_name is not None and strategy_name.strip():
+            normalized = strategy_name.strip()
+            orders = [order for order in orders if order.get("strategy_name") == normalized]
+        return orders
 
     def get_stock_trades(self, session_id: str) -> list[dict[str, Any]]:
         session = self._get_session(session_id)
@@ -360,6 +369,79 @@ class TradingSessionManager:
         if not self._get_session_if_active(session_id):
             stream.close()
         return stream
+
+    def get_readiness_snapshot(self) -> dict[str, Any]:
+        mode = self.settings.xtquant.mode
+        if mode == XTQuantMode.MOCK:
+            return {
+                "status": "mock",
+                "ready": True,
+                "required": False,
+                "reason": None,
+                "active_sessions": 0,
+                "connected_sessions": 0,
+            }
+
+        if not XTQUANT_TRADER_AVAILABLE:
+            return {
+                "status": "unavailable",
+                "ready": False,
+                "required": True,
+                "reason": "xtquant.xttrader is unavailable",
+                "active_sessions": 0,
+                "connected_sessions": 0,
+            }
+
+        qmt_userdata_path = (self.settings.xtquant.data.qmt_userdata_path or "").strip()
+        if not qmt_userdata_path:
+            return {
+                "status": "misconfigured",
+                "ready": False,
+                "required": True,
+                "reason": "qmt_userdata_path is not configured",
+                "active_sessions": 0,
+                "connected_sessions": 0,
+            }
+
+        with self._lock:
+            sessions = [session for session in self._sessions.values() if session.accept_events]
+
+        active_sessions = len(sessions)
+        connected_sessions = sum(
+            1 for session in sessions if session.gateway is not None and session.gateway.connected
+        )
+
+        if active_sessions == 0:
+            return {
+                "status": "idle",
+                "ready": True,
+                "required": True,
+                "reason": None,
+                "qmt_userdata_path": qmt_userdata_path,
+                "active_sessions": 0,
+                "connected_sessions": 0,
+            }
+
+        if connected_sessions == active_sessions:
+            return {
+                "status": "connected",
+                "ready": True,
+                "required": True,
+                "reason": None,
+                "qmt_userdata_path": qmt_userdata_path,
+                "active_sessions": active_sessions,
+                "connected_sessions": connected_sessions,
+            }
+
+        return {
+            "status": "degraded",
+            "ready": False,
+            "required": True,
+            "reason": f"{connected_sessions}/{active_sessions} trading sessions connected",
+            "qmt_userdata_path": qmt_userdata_path,
+            "active_sessions": active_sessions,
+            "connected_sessions": connected_sessions,
+        }
 
     def shutdown(self) -> None:
         with self._lock:

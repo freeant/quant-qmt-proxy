@@ -38,6 +38,7 @@ class KlineHistoryQuery:
     fields: list[str] = field(default_factory=list)
     adjust_type: str = "none"
     fill_data: bool = True
+    auto_download: bool = True
 
 
 @dataclass(frozen=True)
@@ -47,6 +48,7 @@ class TickHistoryQuery:
     end_time: str = ""
     fields: list[str] = field(default_factory=list)
     adjust_type: str = "none"
+    auto_download: bool = True
 
 
 @dataclass(frozen=True)
